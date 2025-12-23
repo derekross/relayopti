@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="#1a1026"></rect>
+
+  <!-- Hexagon outline -->
+  <polygon points="32 10 48 21 48 43 32 54 16 43 16 21" fill="none" stroke="#8b5cf6" stroke-width="4"></polygon>
+
+  <!-- Network nodes -->
+  <circle cx="32" cy="26" r="3" fill="#a78bfa"></circle>
+  <circle cx="24" cy="38" r="3" fill="#a78bfa"></circle>
+  <circle cx="40" cy="38" r="3" fill="#a78bfa"></circle>
+
+  <!-- Network connections -->
+  <line x1="32" y1="26" x2="24" y2="38" stroke="#a78bfa" stroke-width="2"></line>
+  <line x1="32" y1="26" x2="40" y2="38" stroke="#a78bfa" stroke-width="2"></line>
+  <line x1="24" y1="38" x2="40" y2="38" stroke="#a78bfa" stroke-width="2"></line>
+</svg>
