@@ -39,7 +39,7 @@ import { PublishButton } from './PublishButton';
 import type { NIP65Relay } from '@/types/relay-optimizer';
 
 export function RelayOptimizerPage() {
-  const { user, metadata } = useCurrentUser();
+  const { user, metadata, isLoading: isUserLoading } = useCurrentUser();
   const isLoggedIn = !!user;
 
   // Fetch user's relay lists
@@ -323,6 +323,26 @@ export function RelayOptimizerPage() {
         isLoggedIn={false}
         userMetadata={undefined}
       />
+    );
+  }
+
+  // Loading transition: show full-screen loading while fetching user data
+  if (isUserLoading && !metadata) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-violet-950 to-slate-950 flex items-center justify-center">
+        {/* Background grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        {/* Glowing orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-[128px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-500/20 rounded-full blur-[128px] animate-pulse" />
+        {/* Loading content */}
+        <div className="relative z-10 text-center">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center animate-pulse">
+            <RefreshCw className="w-8 h-8 text-white animate-spin" />
+          </div>
+          <p className="text-white/60 text-lg">Loading your profile...</p>
+        </div>
+      </div>
     );
   }
 

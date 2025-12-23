@@ -294,10 +294,10 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className={cn("max-w-[95vw] sm:max-w-md max-h-[90vh] max-h-[90dvh] p-0 overflow-hidden rounded-2xl flex flex-col")}
+        className={cn("max-w-[95vw] sm:max-w-md max-h-[90vh] max-h-[90dvh] p-0 overflow-hidden rounded-2xl flex flex-col bg-slate-900 border-white/10")}
       >
         <DialogHeader className={cn('px-6 pt-6 pb-1 relative flex-shrink-0')}>
-          <DialogTitle className={cn('font-semibold text-center text-lg')}>
+          <DialogTitle className={cn('font-semibold text-center text-lg text-white')}>
             {getTitle()}
           </DialogTitle>
         </DialogHeader>
@@ -306,31 +306,31 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
           {step === 'welcome' && (
             <div className='text-center space-y-4'>
               {/* Hero illustration */}
-              <div className='relative p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50'>
+              <div className='relative p-6 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30'>
                 <div className='flex justify-center items-center space-x-4 mb-3'>
                   <div className='relative'>
-                    <UserPlus className='w-12 h-12 text-blue-600' />
-                    <Sparkles className='w-4 h-4 text-yellow-500 absolute -top-1 -right-1 animate-pulse' />
+                    <UserPlus className='w-12 h-12 text-violet-400' />
+                    <Sparkles className='w-4 h-4 text-amber-400 absolute -top-1 -right-1 animate-pulse' />
                   </div>
-                  <Globe className='w-16 h-16 text-blue-700 animate-spin-slow' />
+                  <Globe className='w-16 h-16 text-fuchsia-400 animate-spin-slow' />
                   <div className='relative'>
-                    <FileText className='w-12 h-12 text-blue-600' />
-                    <Sparkles className='w-4 h-4 text-yellow-500 absolute -top-1 -left-1 animate-pulse' style={{animationDelay: '0.3s'}} />
+                    <FileText className='w-12 h-12 text-violet-400' />
+                    <Sparkles className='w-4 h-4 text-amber-400 absolute -top-1 -left-1 animate-pulse' style={{animationDelay: '0.3s'}} />
                   </div>
                 </div>
 
                 {/* Benefits */}
                 <div className='grid grid-cols-1 gap-2 text-sm'>
-                  <div className='flex items-center justify-center gap-2 text-blue-700 dark:text-blue-300'>
-                    <Shield className='w-4 h-4' />
+                  <div className='flex items-center justify-center gap-2 text-white/80'>
+                    <Shield className='w-4 h-4 text-violet-400' />
                     Decentralized and censorship-resistant
                   </div>
-                  <div className='flex items-center justify-center gap-2 text-blue-700 dark:text-blue-300'>
-                    <User className='w-4 h-4' />
+                  <div className='flex items-center justify-center gap-2 text-white/80'>
+                    <User className='w-4 h-4 text-violet-400' />
                     You are in control of your data
                   </div>
-                  <div className='flex items-center justify-center gap-2 text-blue-700 dark:text-blue-300'>
-                    <Globe className='w-4 h-4' />
+                  <div className='flex items-center justify-center gap-2 text-white/80'>
+                    <Globe className='w-4 h-4 text-violet-400' />
                     Join a global network
                   </div>
                 </div>
@@ -338,7 +338,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
 
               <div className='space-y-3'>
                 <Button
-                  className='w-full rounded-full py-6 text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform transition-all duration-200 hover:scale-105 shadow-lg'
+                  className='w-full rounded-full py-6 text-lg font-semibold bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 transform transition-all duration-200 hover:scale-105 shadow-lg shadow-violet-500/25 text-white'
                   onClick={() => setStep('generate')}
                 >
                   <LogIn className='w-5 h-5 mr-2' />
@@ -351,14 +351,14 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
           {/* Generate Step - Enhanced with animations */}
           {step === 'generate' && (
             <div className='text-center space-y-4'>
-              <div className='relative p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-100 dark:from-blue-950/50 dark:to-purple-950/50 overflow-hidden'>
+              <div className='relative p-6 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 overflow-hidden'>
                 {/* Animated background elements */}
                 {showSparkles && (
                   <div className='absolute inset-0'>
                     {[...Array(12)].map((_, i) => (
                       <Sparkles
                         key={i}
-                        className={`absolute w-4 h-4 text-yellow-400 animate-ping`}
+                        className={`absolute w-4 h-4 text-amber-400 animate-ping`}
                         style={{
                           left: `${Math.random() * 80 + 10}%`,
                           top: `${Math.random() * 80 + 10}%`,
@@ -373,29 +373,29 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                   {isLoading ? (
                     <div className='space-y-3'>
                       <div className='relative'>
-                        <Key className='w-20 h-20 text-primary mx-auto animate-pulse' />
+                        <Key className='w-20 h-20 text-violet-400 mx-auto animate-pulse' />
                         <div className='absolute inset-0 flex items-center justify-center'>
-                          <div className='w-24 h-24 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin'></div>
+                          <div className='w-24 h-24 border-4 border-amber-400 border-t-transparent rounded-full animate-spin'></div>
                         </div>
                       </div>
                       <div className='space-y-2'>
-                        <p className='text-lg font-semibold text-primary flex items-center justify-center gap-2'>
-                          <Sparkles className='w-5 h-5' />
+                        <p className='text-lg font-semibold text-white flex items-center justify-center gap-2'>
+                          <Sparkles className='w-5 h-5 text-amber-400' />
                           Generating your secret key...
                         </p>
-                        <p className='text-sm text-muted-foreground'>
+                        <p className='text-sm text-white/60'>
                           Creating your secure key
                         </p>
                       </div>
                     </div>
                   ) : (
                     <div className='space-y-3'>
-                      <Key className='w-20 h-20 text-primary mx-auto' />
+                      <Key className='w-20 h-20 text-violet-400 mx-auto' />
                       <div className='space-y-2'>
-                        <p className='text-lg font-semibold'>
+                        <p className='text-lg font-semibold text-white'>
                           Ready to generate your secret key?
                         </p>
-                        <p className='text-sm text-muted-foreground px-5'>
+                        <p className='text-sm text-white/60 px-5'>
                           This key will be your password to access applications within the Nostr network.
                         </p>
 
@@ -407,7 +407,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
 
               {!isLoading && (
                 <Button
-                  className='w-full rounded-full py-6 text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transform transition-all duration-200 hover:scale-105 shadow-lg'
+                  className='w-full rounded-full py-6 text-lg font-semibold bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 transform transition-all duration-200 hover:scale-105 shadow-lg shadow-violet-500/25 text-white'
                   onClick={generateKey}
                   disabled={isLoading}
                 >
@@ -422,41 +422,41 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
           {step === 'download' && (
             <div className='text-center space-y-4'>
               {/* Key reveal */}
-              <div className='relative p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 overflow-hidden'>
+              <div className='relative p-6 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 overflow-hidden'>
                 {/* Sparkles */}
                 <div className='absolute inset-0 pointer-events-none'>
-                  <Sparkles className='absolute top-3 left-4 w-3 h-3 text-yellow-400 animate-pulse' style={{animationDelay: '0s'}} />
-                  <Sparkles className='absolute top-6 right-6 w-3 h-3 text-yellow-500 animate-pulse' style={{animationDelay: '0.5s'}} />
-                  <Sparkles className='absolute bottom-4 left-6 w-3 h-3 text-yellow-400 animate-pulse' style={{animationDelay: '1s'}} />
-                  <Sparkles className='absolute bottom-3 right-4 w-3 h-3 text-yellow-500 animate-pulse' style={{animationDelay: '1.5s'}} />
+                  <Sparkles className='absolute top-3 left-4 w-3 h-3 text-amber-400 animate-pulse' style={{animationDelay: '0s'}} />
+                  <Sparkles className='absolute top-6 right-6 w-3 h-3 text-amber-400 animate-pulse' style={{animationDelay: '0.5s'}} />
+                  <Sparkles className='absolute bottom-4 left-6 w-3 h-3 text-amber-400 animate-pulse' style={{animationDelay: '1s'}} />
+                  <Sparkles className='absolute bottom-3 right-4 w-3 h-3 text-amber-400 animate-pulse' style={{animationDelay: '1.5s'}} />
                 </div>
 
                 <div className='relative z-10 flex justify-center items-center mb-3'>
                   <div className='relative'>
-                    <div className='w-16 h-16 bg-gradient-to-br from-blue-200 to-indigo-300 rounded-full flex items-center justify-center shadow-lg animate-pulse'>
-                      <Key className='w-8 h-8 text-indigo-800' />
+                    <div className='w-16 h-16 bg-gradient-to-br from-violet-400 to-fuchsia-500 rounded-full flex items-center justify-center shadow-lg animate-pulse'>
+                      <Key className='w-8 h-8 text-white' />
                     </div>
-                    <div className='absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center animate-bounce'>
+                    <div className='absolute -top-1 -right-1 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center animate-bounce'>
                       <Sparkles className='w-3 h-3 text-white' />
                     </div>
                   </div>
                 </div>
 
                 <div className='relative z-10 space-y-2'>
-                  <p className='text-base font-semibold'>
+                  <p className='text-base font-semibold text-white'>
                     Your secret key has been generated!
                   </p>
 
                   {/* Warning */}
                   <div className='relative mx-auto max-w-sm'>
-                    <div className='p-3 bg-gradient-to-r from-amber-100 via-yellow-50 to-amber-100 dark:from-amber-950/40 dark:via-yellow-950/20 dark:to-amber-950/40 rounded-lg border-2 border-amber-300 dark:border-amber-700 shadow-md'>
+                    <div className='p-3 bg-amber-500/20 rounded-lg border border-amber-500/40'>
                       <div className='flex items-center gap-2 mb-1'>
-                        <FileText className='w-3 h-3 text-amber-700' />
-                        <span className='text-xs font-bold text-amber-800 dark:text-amber-200'>
+                        <FileText className='w-3 h-3 text-amber-400' />
+                        <span className='text-xs font-bold text-amber-300'>
                           Important Warning
                         </span>
                       </div>
-                      <p className='text-xs text-red-700 dark:text-amber-300 italic'>
+                      <p className='text-xs text-amber-200 italic'>
                         This key is your primary and only means of accessing your account. Store it safely and securely.
                       </p>
                     </div>
@@ -464,19 +464,14 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                 </div>
               </div>
 
-              {/* Key vault */}
-
-
               {/* Security options */}
               <div className='space-y-3'>
-
-
                 <div className='grid grid-cols-1 gap-2'>
                   {/* Download Option */}
-                   <Card className={`cursor-pointer transition-all duration-200 ${
+                   <Card className={`cursor-pointer transition-all duration-200 border-white/10 bg-white/5 ${
                     keySecured === 'downloaded'
-                       ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950/20'
-                       : 'hover:bg-primary/5 hover:border-primary/20'
+                       ? 'ring-2 ring-emerald-500 bg-emerald-500/10'
+                       : 'hover:bg-white/10'
                    }`}>
                     <CardContent className='p-3'>
                       <Button
@@ -487,42 +482,40 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                         <div className='flex items-center gap-3 w-full'>
                           <div className={`p-1.5 rounded-lg ${
                             keySecured === 'downloaded'
-                               ? 'bg-green-100 dark:bg-green-900'
-                               : 'bg-primary/10'
+                               ? 'bg-emerald-500/20'
+                               : 'bg-violet-500/20'
                            }`}>
                             {keySecured === 'downloaded' ? (
-                               <CheckCircle className='w-4 h-4 text-green-600' />
+                               <CheckCircle className='w-4 h-4 text-emerald-400' />
                              ) : (
-                               <Download className='w-4 h-4 text-primary' />
+                               <Download className='w-4 h-4 text-violet-400' />
                              )}
                           </div>
                           <div className='flex-1 text-left'>
-                             <div className='font-medium text-sm'>
+                             <div className='font-medium text-sm text-white'>
                                Download as File
                              </div>
-                             <div className='text-xs text-muted-foreground'>
+                             <div className='text-xs text-white/50'>
                                Save as nostr-nsec-key.txt file
                              </div>
                           </div>
                           {keySecured === 'downloaded' && (
-                             <div className='text-xs font-medium text-green-600'>
-                               ✓ Downloaded
+                             <div className='text-xs font-medium text-emerald-400'>
+                               Downloaded
                              </div>
                            )}
                         </div>
                       </Button>
                     </CardContent>
                   </Card>
-
-
                 </div>
 
                 {/* Continue button */}
                 <Button
                   className={`w-full rounded-full py-4 text-base font-semibold transform transition-all duration-200 shadow-lg ${
                     keySecured === 'downloaded'
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 dark:from-blue-950/50 dark:to-purple-950/50 hover:scale-105'
-                      : 'bg-gradient-to-r from-blue-600/60 to-indigo-600/60 text-muted cursor-not-allowed'
+                      ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 hover:scale-105 text-white shadow-violet-500/25'
+                      : 'bg-white/10 text-white/40 cursor-not-allowed'
                   }`}
                   onClick={finishKeySetup}
                   disabled={keySecured !== 'downloaded'}
@@ -549,31 +542,31 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
           {step === 'profile' && (
             <div className='text-center space-y-4'>
               {/* Profile setup illustration */}
-              <div className='relative p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 overflow-hidden'>
+              <div className='relative p-6 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 overflow-hidden'>
                 {/* Sparkles */}
                 <div className='absolute inset-0 pointer-events-none'>
-                  <Sparkles className='absolute top-3 left-4 w-3 h-3 text-yellow-400 animate-pulse' style={{animationDelay: '0s'}} />
-                  <Sparkles className='absolute top-6 right-6 w-3 h-3 text-yellow-500 animate-pulse' style={{animationDelay: '0.5s'}} />
-                  <Sparkles className='absolute bottom-4 left-6 w-3 h-3 text-yellow-400 animate-pulse' style={{animationDelay: '1s'}} />
+                  <Sparkles className='absolute top-3 left-4 w-3 h-3 text-amber-400 animate-pulse' style={{animationDelay: '0s'}} />
+                  <Sparkles className='absolute top-6 right-6 w-3 h-3 text-amber-400 animate-pulse' style={{animationDelay: '0.5s'}} />
+                  <Sparkles className='absolute bottom-4 left-6 w-3 h-3 text-amber-400 animate-pulse' style={{animationDelay: '1s'}} />
                 </div>
 
                 <div className='relative z-10 flex justify-center items-center mb-3'>
                   <div className='relative'>
-                    <div className='w-16 h-16 bg-gradient-to-br from-blue-200 to-indigo-300 rounded-full flex items-center justify-center shadow-lg'>
-                      <User className='w-8 h-8 text-blue-800' />
+                    <div className='w-16 h-16 bg-gradient-to-br from-violet-400 to-fuchsia-500 rounded-full flex items-center justify-center shadow-lg'>
+                      <User className='w-8 h-8 text-white' />
                     </div>
-                    <div className='absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center animate-bounce'>
+                    <div className='absolute -top-1 -right-1 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center animate-bounce'>
                       <Sparkles className='w-3 h-3 text-white' />
                     </div>
                   </div>
                 </div>
 
                 <div className='relative z-10 space-y-2'>
-                  <p className='text-base font-semibold'>
+                  <p className='text-base font-semibold text-white'>
                     Almost there! Let's set up your profile
                   </p>
 
-                  <p className='text-sm text-muted-foreground'>
+                  <p className='text-sm text-white/60'>
                     Your profile is your identity on Nostr.
                   </p>
                 </div>
@@ -581,10 +574,10 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
 
               {/* Publishing status indicator */}
               {isPublishing && (
-                <div className='relative p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800'>
+                <div className='relative p-4 rounded-xl bg-violet-500/20 border border-violet-500/30'>
                   <div className='flex items-center justify-center gap-3'>
-                    <div className='w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin' />
-                    <span className='text-sm font-medium text-blue-700 dark:text-blue-300'>
+                    <div className='w-5 h-5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin' />
+                    <span className='text-sm font-medium text-violet-300'>
                       Publishing your profile...
                     </span>
                   </div>
@@ -594,7 +587,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
               {/* Profile form */}
               <div className={`space-y-4 text-left ${isPublishing ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className='space-y-2'>
-                  <label htmlFor='profile-name' className='text-sm font-medium'>
+                  <label htmlFor='profile-name' className='text-sm font-medium text-white/80'>
                     Display Name
                   </label>
                   <Input
@@ -602,13 +595,13 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                     value={profileData.name}
                     onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder='Your name'
-                    className='rounded-lg'
+                    className='rounded-lg bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-violet-500'
                     disabled={isPublishing}
                   />
                 </div>
 
                 <div className='space-y-2'>
-                  <label htmlFor='profile-about' className='text-sm font-medium'>
+                  <label htmlFor='profile-about' className='text-sm font-medium text-white/80'>
                     Bio
                   </label>
                   <Textarea
@@ -616,14 +609,14 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                     value={profileData.about}
                     onChange={(e) => setProfileData(prev => ({ ...prev, about: e.target.value }))}
                     placeholder='Tell others about yourself...'
-                    className='rounded-lg resize-none'
+                    className='rounded-lg resize-none bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-violet-500'
                     rows={3}
                     disabled={isPublishing}
                   />
                 </div>
 
                 <div className='space-y-2'>
-                  <label htmlFor='profile-picture' className='text-sm font-medium'>
+                  <label htmlFor='profile-picture' className='text-sm font-medium text-white/80'>
                     Avatar
                   </label>
                   <div className='flex gap-2'>
@@ -632,7 +625,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                       value={profileData.picture}
                       onChange={(e) => setProfileData(prev => ({ ...prev, picture: e.target.value }))}
                       placeholder='https://example.com/your-avatar.jpg'
-                      className='rounded-lg flex-1'
+                      className='rounded-lg flex-1 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-violet-500'
                       disabled={isPublishing}
                     />
                     <input
@@ -648,7 +641,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                       size='icon'
                       onClick={() => avatarFileInputRef.current?.click()}
                       disabled={isUploading || isPublishing}
-                      className='rounded-lg shrink-0'
+                      className='rounded-lg shrink-0 border-white/20 text-white/70 hover:bg-white/10 hover:text-white'
                       title='Upload avatar image'
                     >
                       {isUploading ? (
@@ -664,7 +657,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
               {/* Action buttons */}
               <div className='space-y-3'>
                 <Button
-                  className='w-full rounded-full py-4 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform transition-all duration-200 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none'
+                  className='w-full rounded-full py-4 text-base font-semibold bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 transform transition-all duration-200 hover:scale-105 shadow-lg shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-white'
                   onClick={() => finishSignup(false)}
                   disabled={isPublishing || isUploading}
                 >
@@ -683,7 +676,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
 
                 <Button
                   variant='outline'
-                  className='w-full rounded-full py-3 disabled:opacity-50 disabled:cursor-not-allowed'
+                  className='w-full rounded-full py-3 disabled:opacity-50 disabled:cursor-not-allowed border-white/20 text-white/70 hover:bg-white/10 hover:text-white'
                   onClick={() => finishSignup(true)}
                   disabled={isPublishing || isUploading}
                 >

@@ -43,6 +43,7 @@ export function useCurrentUser() {
   return {
     user,
     users,
+    isLoading: author.isLoading,
     ...author.data,
   };
 }

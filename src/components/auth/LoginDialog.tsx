@@ -182,30 +182,30 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className={cn("max-w-[95vw] sm:max-w-md max-h-[90vh] max-h-[90dvh] p-0 overflow-hidden rounded-2xl overflow-y-scroll")}
+        className={cn("max-w-[95vw] sm:max-w-md max-h-[90vh] max-h-[90dvh] p-0 overflow-hidden rounded-2xl overflow-y-scroll bg-slate-900 border-white/10")}
       >
         <DialogHeader className={cn('px-6 pt-6 pb-1 relative')}>
 
-            <DialogDescription className="text-center">
+            <DialogDescription className="text-center text-white/60">
               Sign up or log in to continue
             </DialogDescription>
         </DialogHeader>
         <div className='px-6 pt-2 pb-4 space-y-4 overflow-y-auto flex-1'>
           {/* Prominent Sign Up Section */}
-          <div className='relative p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 border border-blue-200 dark:border-blue-800 overflow-hidden'>
+          <div className='relative p-4 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 overflow-hidden'>
             <div className='relative z-10 text-center space-y-3'>
               <div className='flex justify-center items-center gap-2 mb-2'>
-                <Sparkles className='w-5 h-5 text-blue-600' />
-                <span className='font-semibold text-blue-800 dark:text-blue-200'>
+                <Sparkles className='w-5 h-5 text-violet-400' />
+                <span className='font-semibold text-white'>
                   New to Nostr?
                 </span>
               </div>
-              <p className='text-sm text-blue-700 dark:text-blue-300'>
+              <p className='text-sm text-white/70'>
                 Create a new account to get started. It's free and open.
               </p>
               <Button
                 onClick={handleSignupClick}
-                className='w-full rounded-full py-3 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform transition-all duration-200 hover:scale-105 shadow-lg border-0'
+                className='w-full rounded-full py-3 text-base font-semibold bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 transform transition-all duration-200 hover:scale-105 shadow-lg shadow-violet-500/25 border-0 text-white'
               >
                 <UserPlus className='w-4 h-4 mr-2' />
                 <span>Sign Up</span>
@@ -216,10 +216,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
           {/* Divider */}
           <div className='relative'>
             <div className='absolute inset-0 flex items-center'>
-              <div className='w-full border-t border-gray-300 dark:border-gray-600'></div>
+              <div className='w-full border-t border-white/10'></div>
             </div>
             <div className='relative flex justify-center text-sm'>
-              <span className='px-3 bg-background text-muted-foreground'>
+              <span className='px-3 bg-slate-900 text-white/50'>
                 <span>Or log in</span>
               </span>
             </div>
@@ -227,35 +227,35 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
 
           {/* Login Methods */}
           <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/80 rounded-lg mb-4">
-              <TabsTrigger value="extension" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10 rounded-lg mb-4">
+              <TabsTrigger value="extension" className="flex items-center gap-2 text-white/70 data-[state=active]:bg-violet-500 data-[state=active]:text-white">
                 <Shield className="w-4 h-4" />
                 <span>Extension</span>
               </TabsTrigger>
-              <TabsTrigger value="key" className="flex items-center gap-2">
+              <TabsTrigger value="key" className="flex items-center gap-2 text-white/70 data-[state=active]:bg-violet-500 data-[state=active]:text-white">
                 <KeyRound className="w-4 h-4" />
                 <span>Key</span>
               </TabsTrigger>
-              <TabsTrigger value="bunker" className="flex items-center gap-2">
+              <TabsTrigger value="bunker" className="flex items-center gap-2 text-white/70 data-[state=active]:bg-violet-500 data-[state=active]:text-white">
                 <Cloud className="w-4 h-4" />
                 <span>Bunker</span>
               </TabsTrigger>
             </TabsList>
-            <TabsContent value='extension' className='space-y-3 bg-muted'>
+            <TabsContent value='extension' className='space-y-3'>
               {errors.extension && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>{errors.extension}</AlertDescription>
                 </Alert>
               )}
-              <div className='text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800'>
-                <Shield className='w-12 h-12 mx-auto mb-3 text-primary' />
-                <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>
+              <div className='text-center p-4 rounded-lg bg-white/5 border border-white/10'>
+                <Shield className='w-12 h-12 mx-auto mb-3 text-violet-400' />
+                <p className='text-sm text-white/60 mb-4'>
                   Login with one click using the browser extension
                 </p>
                 <div className="flex justify-center">
                   <Button
-                    className='w-full rounded-full py-4'
+                    className='w-full rounded-full py-4 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
                     onClick={handleExtensionLogin}
                     disabled={isLoading}
                   >
@@ -268,7 +268,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
             <TabsContent value='key' className='space-y-4'>
               <div className='space-y-4'>
                 <div className='space-y-2'>
-                  <label htmlFor='nsec' className='text-sm font-medium'>
+                  <label htmlFor='nsec' className='text-sm font-medium text-white/80'>
                     Secret Key (nsec)
                   </label>
                   <Input
@@ -279,19 +279,19 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                       setNsec(e.target.value);
                       if (errors.nsec) setErrors(prev => ({ ...prev, nsec: undefined }));
                     }}
-                    className={`rounded-lg ${
+                    className={`rounded-lg bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-violet-500 ${
                       errors.nsec ? 'border-red-500 focus-visible:ring-red-500' : ''
                     }`}
                     placeholder='nsec1...'
                     autoComplete="off"
                   />
                   {errors.nsec && (
-                    <p className="text-sm text-red-500">{errors.nsec}</p>
+                    <p className="text-sm text-red-400">{errors.nsec}</p>
                   )}
                 </div>
 
                 <Button
-                  className='w-full rounded-full py-3'
+                  className='w-full rounded-full py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
                   onClick={handleKeyLogin}
                   disabled={isLoading || !nsec.trim()}
                 >
@@ -300,10 +300,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
 
                 <div className='relative'>
                   <div className='absolute inset-0 flex items-center'>
-                    <div className='w-full border-t border-muted'></div>
+                    <div className='w-full border-t border-white/10'></div>
                   </div>
                   <div className='relative flex justify-center text-xs'>
-                    <span className='px-2 bg-background text-muted-foreground'>
+                    <span className='px-2 bg-slate-900 text-white/50'>
                       or
                     </span>
                   </div>
@@ -319,7 +319,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                   />
                   <Button
                     variant='outline'
-                    className='w-full'
+                    className='w-full border-white/20 text-white/70 hover:bg-white/10 hover:text-white'
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isLoading || isFileLoading}
                   >
@@ -327,15 +327,15 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                     {isFileLoading ? 'Reading File...' : 'Upload Your Key File'}
                   </Button>
                   {errors.file && (
-                    <p className="text-sm text-red-500 mt-2">{errors.file}</p>
+                    <p className="text-sm text-red-400 mt-2">{errors.file}</p>
                   )}
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value='bunker' className='space-y-3 bg-muted'>
+            <TabsContent value='bunker' className='space-y-3'>
               <div className='space-y-2'>
-                <label htmlFor='bunkerUri' className='text-sm font-medium text-gray-700 dark:text-gray-400'>
+                <label htmlFor='bunkerUri' className='text-sm font-medium text-white/80'>
                   Bunker URI
                 </label>
                 <Input
@@ -345,20 +345,20 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                     setBunkerUri(e.target.value);
                     if (errors.bunker) setErrors(prev => ({ ...prev, bunker: undefined }));
                   }}
-                  className={`rounded-lg border-gray-300 dark:border-gray-700 focus-visible:ring-primary ${
+                  className={`rounded-lg bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-violet-500 ${
                     errors.bunker ? 'border-red-500' : ''
                   }`}
                   placeholder='bunker://'
                   autoComplete="off"
                 />
                 {errors.bunker && (
-                  <p className="text-sm text-red-500">{errors.bunker}</p>
+                  <p className="text-sm text-red-400">{errors.bunker}</p>
                 )}
               </div>
 
               <div className="flex justify-center">
                 <Button
-                  className='w-full rounded-full py-4'
+                  className='w-full rounded-full py-4 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
                   onClick={handleBunkerLogin}
                   disabled={isLoading || !bunkerUri.trim()}
                 >
