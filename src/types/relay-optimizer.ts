@@ -140,6 +140,24 @@ export interface RelayReview {
   pubkey: string;
   relayUrl: string;
   content: string;
-  rating?: number; // 1-5 stars if available
+  /** Rating from 0-1 (0.2 = 1 star, 0.4 = 2 stars, etc.) */
+  rating: number;
   createdAt: number;
+  /** Author metadata if available */
+  author?: {
+    name?: string;
+    picture?: string;
+    nip05?: string;
+  };
+}
+
+/** Aggregated review data for a relay */
+export interface RelayReviewSummary {
+  relayUrl: string;
+  /** Average rating (0-1) */
+  averageRating: number;
+  /** Total number of reviews */
+  reviewCount: number;
+  /** Individual reviews */
+  reviews: RelayReview[];
 }

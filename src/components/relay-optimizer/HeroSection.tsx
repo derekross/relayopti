@@ -1,7 +1,9 @@
-import { Radio, Zap, Users, Shield, Globe, ArrowRight, Activity } from 'lucide-react';
+import { Radio, Zap, Users, Shield, Globe, ArrowRight, Activity, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { useLoginActions } from '@/hooks/useLoginActions';
 import type { NostrMetadata } from '@nostrify/nostrify';
 
 interface HeroSectionProps {
@@ -15,6 +17,8 @@ export function HeroSection({
   userMetadata,
   className,
 }: HeroSectionProps) {
+  const { logout } = useLoginActions();
+
   // Logged in - compact header
   if (isLoggedIn && userMetadata) {
     return (
@@ -30,6 +34,17 @@ export function HeroSection({
           <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl" />
           <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-white/5 to-transparent rounded-full blur-3xl" />
         </div>
+
+        {/* Logout button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={logout}
+          className="absolute top-4 right-4 z-20 text-white/70 hover:text-white hover:bg-white/10 gap-1.5"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline">Logout</span>
+        </Button>
 
         {/* Content */}
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">

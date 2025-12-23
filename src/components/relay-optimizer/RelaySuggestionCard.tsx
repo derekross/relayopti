@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { PingIndicator } from './PingIndicator';
+import { InlineReviewSummary } from './RelayReviewsList';
 import type { RelaySuggestion, RelayStatusWithInfo } from '@/types/relay-optimizer';
 import { getRelayDisplayUrl } from '@/lib/relay-utils';
 
@@ -160,6 +161,9 @@ export function RelaySuggestionCard({
                   size="sm"
                 />
               )}
+
+              {/* Reviews */}
+              <InlineReviewSummary relayUrl={suggestion.url} />
             </div>
 
             {/* Source badge */}

@@ -4,7 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import type { RelaySuggestion, ContactRelayInfo } from '@/types/relay-optimizer';
 import { normalizeRelayUrl, isSameRelay } from '@/lib/relay-utils';
 
-const PURPLEPAGES_URL = 'wss://purplepag.es';
+/** Relays that index NIP-65 data, in order of preference */
+const NIP65_RELAYS = [
+  'wss://purplepag.es',
+  'wss://indexer.coracle.social',
+  'wss://user.kindpag.es',
+];
 
 interface ContactRelaysResult {
   suggestions: RelaySuggestion[];
@@ -50,24 +55,65 @@ export function useContactRelays(
         return { suggestions: [], contactCount: 0, analyzedCount: 0 };
       }
 
-      // Step 2: Query purplepag.es for contacts' NIP-65 events
-      // Batch into chunks to avoid overwhelming the relay
+      // Step 2: Query for contacts' NIP-65 events
+      // Batch into chunks to avoid overwhelming relays
       const BATCH_SIZE = 100;
       const relayUsage = new Map<string, Set<string>>(); // relay -> set of pubkeys
       const contactInfo = new Map<string, ContactRelayInfo>();
 
-      let purplepages: NRelay1 | null = null;
-      try {
-        purplepages = new NRelay1(PURPLEPAGES_URL);
+      console.log(`[ContactRelays] Querying ${contactPubkeys.length} contacts in ${Math.ceil(contactPubkeys.length / BATCH_SIZE)} batches...`);
 
+      // Find a working relay from the list
+      let workingRelay: NRelay1 | null = null;
+
+      for (const relayUrl of NIP65_RELAYS) {
+        try {
+          console.log(`[ContactRelays] Trying ${relayUrl}...`);
+          const relay = new NRelay1(relayUrl);
+          const testEvents = await relay.query(
+            [{ kinds: [10002], limit: 1 }],
+            { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) }
+          );
+          if (testEvents.length > 0) {
+            console.log(`[ContactRelays] Using ${relayUrl}`);
+            workingRelay = relay;
+            break;
+          } else {
+            console.log(`[ContactRelays] ${relayUrl} returned no data, trying next...`);
+            relay.close();
+          }
+        } catch (err) {
+          console.log(`[ContactRelays] ${relayUrl} failed:`, err);
+        }
+      }
+
+      if (!workingRelay) {
+        console.log('[ContactRelays] No indexer relay available, falling back to main pool');
+      }
+
+      try {
         // Fetch NIP-65 events in batches
         for (let i = 0; i < contactPubkeys.length; i += BATCH_SIZE) {
           const batch = contactPubkeys.slice(i, i + BATCH_SIZE);
 
-          const nip65Events = await purplepages.query(
-            [{ kinds: [10002], authors: batch }],
-            { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) }
-          );
+          let nip65Events: typeof contactEvents = [];
+          try {
+            if (workingRelay) {
+              nip65Events = await workingRelay.query(
+                [{ kinds: [10002], authors: batch }],
+                { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) }
+              );
+            } else {
+              nip65Events = await nostr.query(
+                [{ kinds: [10002], authors: batch }],
+                { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) }
+              );
+            }
+            console.log(`[ContactRelays] Batch ${i / BATCH_SIZE + 1}: Got ${nip65Events.length} NIP-65 events`);
+          } catch (err) {
+            console.error(`[ContactRelays] Batch ${i / BATCH_SIZE + 1} failed:`, err);
+            continue;
+          }
 
           // Process NIP-65 events
           for (const event of nip65Events) {
@@ -92,75 +138,13 @@ export function useContactRelays(
             }
           }
         }
-
-        // Step 3: Also fetch kind 0 profiles for display names and legacy relays
-        for (let i = 0; i < contactPubkeys.length; i += BATCH_SIZE) {
-          const batch = contactPubkeys.slice(i, i + BATCH_SIZE);
-
-          try {
-            const profileEvents = await purplepages.query(
-              [{ kinds: [0], authors: batch }],
-              { signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]) }
-            );
-
-            for (const event of profileEvents) {
-              try {
-                const metadata = JSON.parse(event.content) as {
-                  name?: string;
-                  display_name?: string;
-                  picture?: string;
-                  relay?: string;
-                  relays?: string[];
-                };
-
-                // Update contact info with display name
-                const existing = contactInfo.get(event.pubkey);
-                if (existing) {
-                  existing.displayName = metadata.display_name || metadata.name;
-                  existing.picture = metadata.picture;
-                }
-
-                // Check for legacy relay field
-                const legacyRelays: string[] = [];
-                if (metadata.relay) {
-                  legacyRelays.push(normalizeRelayUrl(metadata.relay));
-                }
-                if (Array.isArray(metadata.relays)) {
-                  legacyRelays.push(...metadata.relays.map(normalizeRelayUrl));
-                }
-
-                for (const relay of legacyRelays) {
-                  if (!relayUsage.has(relay)) {
-                    relayUsage.set(relay, new Set());
-                  }
-                  relayUsage.get(relay)!.add(event.pubkey);
-
-                  // Update source to 'both' if already have NIP-65
-                  const info = contactInfo.get(event.pubkey);
-                  if (info && info.source === 'nip65') {
-                    info.source = 'both';
-                  } else if (!info) {
-                    contactInfo.set(event.pubkey, {
-                      pubkey: event.pubkey,
-                      displayName: metadata.display_name || metadata.name,
-                      picture: metadata.picture,
-                      relays: legacyRelays,
-                      source: 'profile',
-                    });
-                  }
-                }
-              } catch {
-                // Failed to parse profile JSON
-              }
-            }
-          } catch {
-            // Failed to fetch profiles, continue without them
-          }
-        }
+      } catch (err) {
+        console.error('[ContactRelays] Error querying NIP-65:', err);
       } finally {
-        // Clean up the relay connection
-        purplepages?.close();
+        workingRelay?.close();
       }
+
+      console.log(`[ContactRelays] Analysis complete: ${contactInfo.size} contacts analyzed, ${relayUsage.size} unique relays found`);
 
       // Step 4: Convert to sorted suggestions
       const userRelaySet = new Set(userRelays.map(normalizeRelayUrl));

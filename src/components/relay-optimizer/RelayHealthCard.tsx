@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, ChevronDown, ChevronUp, ExternalLink, Shield, Zap, Globe, Info } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, ExternalLink, Shield, Zap, Globe, Info, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { PingIndicator } from './PingIndicator';
+import { InlineReviewSummary } from './RelayReviewsList';
+import { RelayReviewDialog } from './RelayReviewDialog';
 import { getLatencyDescription } from '@/lib/relay-utils';
 import type { RelayStatusWithInfo } from '@/types/relay-optimizer';
 import { getRelayDisplayUrl } from '@/lib/relay-utils';
@@ -53,6 +55,7 @@ export function RelayHealthCard({
   className,
 }: RelayHealthCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
   const { nip11 } = relay;
 
   const displayUrl = getRelayDisplayUrl(relay.url);
@@ -125,8 +128,8 @@ export function RelayHealthCard({
               </p>
             )}
 
-            {/* Ping indicator */}
-            <div className="flex items-center gap-3">
+            {/* Ping indicator and reviews */}
+            <div className="flex items-center gap-3 flex-wrap">
               <PingIndicator
                 status={relay.status}
                 latency={relay.latency}
@@ -139,6 +142,13 @@ export function RelayHealthCard({
                   {getLatencyDescription(relay.latency)}
                 </span>
               )}
+
+              <span className="text-white/20">|</span>
+
+              <InlineReviewSummary
+                relayUrl={relay.url}
+                onClick={() => setShowReviewDialog(true)}
+              />
             </div>
           </div>
 
@@ -291,9 +301,27 @@ export function RelayHealthCard({
                   )}
                 </div>
               )}
+
+              {/* Write review button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowReviewDialog(true)}
+                className="w-full mt-2 text-xs border-white/20 text-white/70 hover:bg-white/10 hover:text-white gap-1"
+              >
+                <MessageSquare className="w-3 h-3" />
+                Write a Review
+              </Button>
             </div>
           )}
         </CollapsibleContent>
+
+        {/* Review Dialog */}
+        <RelayReviewDialog
+          relayUrl={relay.url}
+          isOpen={showReviewDialog}
+          onClose={() => setShowReviewDialog(false)}
+        />
       </div>
     </Collapsible>
   );

@@ -6,7 +6,6 @@ import { normalizeRelayUrl } from '@/lib/relay-utils';
 
 /** Default search relays for users who don't have any configured */
 export const DEFAULT_SEARCH_RELAYS = [
-  'wss://relay.nostr.band',
   'wss://nostr.wine',
   'wss://search.nos.today',
   'wss://relay.noswhere.com',
