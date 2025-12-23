@@ -624,10 +624,12 @@ export function RelayOptimizerPage() {
 
         {/* Add Relay Dialog */}
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogContent>
+          <DialogContent className="bg-slate-900 border-white/10">
             <DialogHeader>
-              <DialogTitle>Add {addDialogType === 'inbox' ? 'Inbox/Outbox' : addDialogType.toUpperCase()} Relay</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-white">
+                Add {addDialogType === 'inbox' ? 'Inbox/Outbox' : addDialogType.toUpperCase()} Relay
+              </DialogTitle>
+              <DialogDescription className="text-white/60">
                 Enter the WebSocket URL of the relay you want to add.
               </DialogDescription>
             </DialogHeader>
@@ -638,14 +640,23 @@ export function RelayOptimizerPage() {
                 value={newRelayUrl}
                 onChange={e => setNewRelayUrl(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddRelay()}
+                className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-violet-500"
               />
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setAddDialogOpen(false)}
+                className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleAddRelay} disabled={!newRelayUrl.trim()}>
+              <Button
+                onClick={handleAddRelay}
+                disabled={!newRelayUrl.trim()}
+                className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Relay
               </Button>
