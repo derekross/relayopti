@@ -1,4 +1,4 @@
-import { Inbox, Send, MessageSquare, Search, HelpCircle } from 'lucide-react';
+import { Inbox, Send, MessageSquare, Search, HelpCircle, Ban, Database, Share2, Radio, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -15,17 +15,26 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
+type RelayType = 'inbox' | 'outbox' | 'dm' | 'search' | 'blocked' | 'indexer' | 'proxy' | 'broadcast' | 'trusted';
+
 interface RelayTypeExplainerProps {
-  type: 'inbox' | 'outbox' | 'dm' | 'search';
+  type: RelayType;
   variant?: 'tooltip' | 'inline';
   className?: string;
 }
 
-const relayTypeInfo = {
+const relayTypeInfo: Record<RelayType, {
+  icon: typeof Inbox;
+  title: string;
+  shortDesc: string;
+  longDesc: string;
+  tips: string[];
+  color: string;
+  bgColor: string;
+}> = {
   inbox: {
     icon: Inbox,
     title: 'Inbox (Read) Relays',
-    emoji: '',
     shortDesc: 'Where others find you',
     longDesc: 'These are relays where other people can find your posts and send you mentions. Think of it like your mailing address - people need to know where to send things to reach you.',
     tips: [
@@ -39,7 +48,6 @@ const relayTypeInfo = {
   outbox: {
     icon: Send,
     title: 'Outbox (Write) Relays',
-    emoji: '',
     shortDesc: 'Where you publish',
     longDesc: 'These are relays where your posts are published. When you write something, it gets sent to these relays so others can see it.',
     tips: [
@@ -53,7 +61,6 @@ const relayTypeInfo = {
   dm: {
     icon: MessageSquare,
     title: 'DM (Direct Message) Relays',
-    emoji: '',
     shortDesc: 'For private messages',
     longDesc: 'Special relays just for your encrypted direct messages. Keeping DMs on separate relays improves privacy and makes messaging more reliable.',
     tips: [
@@ -67,16 +74,80 @@ const relayTypeInfo = {
   search: {
     icon: Search,
     title: 'Search Relays',
-    emoji: '',
     shortDesc: 'For finding content',
     longDesc: 'Relays optimized for searching. When you search for posts, hashtags, or users, your client queries these relays. They index lots of content to help you find things.',
     tips: [
       '1-2 search relays is usually enough',
-      'relay.nostr.band is a popular choice',
+      'nostr.wine and nos.today are popular choices',
       'Search relays may have different content',
     ],
     color: 'text-emerald-500',
     bgColor: 'bg-emerald-500/10',
+  },
+  indexer: {
+    icon: Database,
+    title: 'Indexer Relays',
+    shortDesc: 'For profile discovery',
+    longDesc: 'Specialized relays that index user profiles (kind 0) and relay lists (kind 10002). Clients use these to quickly find information about users without querying many relays.',
+    tips: [
+      'purplepag.es is the most popular indexer',
+      'Helps clients find your profile faster',
+      '1-3 indexer relays is recommended',
+    ],
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10',
+  },
+  proxy: {
+    icon: Share2,
+    title: 'Proxy Relays',
+    shortDesc: 'Aggregator relays',
+    longDesc: 'Proxy relays aggregate content from multiple other relays. They can help you access content from relays you\'re not directly connected to, acting as a bridge.',
+    tips: [
+      'Useful for discovering more content',
+      'Can reduce the number of direct connections',
+      'May have higher latency',
+    ],
+    color: 'text-orange-500',
+    bgColor: 'bg-orange-500/10',
+  },
+  broadcast: {
+    icon: Radio,
+    title: 'Broadcast Relays',
+    shortDesc: 'For wide distribution',
+    longDesc: 'Relays specifically for broadcasting your events widely. When you want maximum reach for your posts, broadcast relays help ensure your content spreads across the network.',
+    tips: [
+      'Good for announcements and important posts',
+      'sendit.nosflare.com is a popular choice',
+      'Use sparingly to avoid spam',
+    ],
+    color: 'text-cyan-500',
+    bgColor: 'bg-cyan-500/10',
+  },
+  trusted: {
+    icon: ShieldCheck,
+    title: 'Trusted Relays',
+    shortDesc: 'Privacy-safe relays',
+    longDesc: 'Relays you trust with your IP address and connection metadata. Some clients use this list to decide which relays can see your real IP vs. those accessed through Tor or a proxy.',
+    tips: [
+      'Only add relays you truly trust',
+      'Consider the relay operator\'s reputation',
+      'Useful for privacy-focused setups',
+    ],
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-500/10',
+  },
+  blocked: {
+    icon: Ban,
+    title: 'Blocked Relays',
+    shortDesc: 'Relays to avoid',
+    longDesc: 'Relays your client should never connect to. Use this to block relays with spam, illegal content, or that you simply don\'t want to interact with.',
+    tips: [
+      'Blocking is permanent until you remove it',
+      'Useful for avoiding problematic relays',
+      'Your client will refuse to connect to these',
+    ],
+    color: 'text-red-500',
+    bgColor: 'bg-red-500/10',
   },
 };
 
@@ -152,10 +223,18 @@ export function RelayTypesGuide() {
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
+          <p className="text-xs text-white/40 uppercase tracking-wide font-medium">Core Relays</p>
           <RelayTypeExplainerDark type="inbox" />
           <RelayTypeExplainerDark type="outbox" />
           <RelayTypeExplainerDark type="dm" />
           <RelayTypeExplainerDark type="search" />
+
+          <p className="text-xs text-white/40 uppercase tracking-wide font-medium pt-2">Specialized Relays</p>
+          <RelayTypeExplainerDark type="indexer" />
+          <RelayTypeExplainerDark type="proxy" />
+          <RelayTypeExplainerDark type="broadcast" />
+          <RelayTypeExplainerDark type="trusted" />
+          <RelayTypeExplainerDark type="blocked" />
 
           <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-sm">
             <p className="font-medium mb-2 text-amber-400">Pro tip</p>
@@ -173,15 +252,20 @@ export function RelayTypesGuide() {
 /**
  * Dark theme version of relay type explainer for the modal
  */
-function RelayTypeExplainerDark({ type }: { type: 'inbox' | 'outbox' | 'dm' | 'search' }) {
+function RelayTypeExplainerDark({ type }: { type: RelayType }) {
   const info = relayTypeInfo[type];
   const Icon = info.icon;
 
-  const darkColors = {
+  const darkColors: Record<RelayType, string> = {
     inbox: 'bg-violet-500/20 border-violet-500/30 text-violet-400',
     outbox: 'bg-purple-500/20 border-purple-500/30 text-purple-400',
     dm: 'bg-pink-500/20 border-pink-500/30 text-pink-400',
     search: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400',
+    indexer: 'bg-blue-500/20 border-blue-500/30 text-blue-400',
+    proxy: 'bg-orange-500/20 border-orange-500/30 text-orange-400',
+    broadcast: 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400',
+    trusted: 'bg-amber-500/20 border-amber-500/30 text-amber-400',
+    blocked: 'bg-red-500/20 border-red-500/30 text-red-400',
   };
 
   return (
