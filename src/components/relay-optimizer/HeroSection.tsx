@@ -19,8 +19,14 @@ export function HeroSection({
 }: HeroSectionProps) {
   const { logout } = useLoginActions();
 
-  // Logged in - compact header
-  if (isLoggedIn && userMetadata) {
+  // Logged in - compact header (with or without metadata)
+  if (isLoggedIn) {
+    const displayName = userMetadata?.display_name || userMetadata?.name || 'Nostr User';
+    const greeting = userMetadata ? `Hey, ${displayName}!` : 'Welcome to Nostr!';
+    const description = userMetadata
+      ? "Let's optimize your relay setup. We'll check your current relays, see what your friends are using, and help you find the best connections."
+      : "Looks like you're new here! Let's set up your relay connections so you can start publishing and discovering content on Nostr.";
+
     return (
       <div
         className={cn(
@@ -49,21 +55,20 @@ export function HeroSection({
         {/* Content */}
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
           <Avatar className="w-20 h-20 border-4 border-white/20 shadow-xl">
-            {userMetadata.picture && (
+            {userMetadata?.picture && (
               <AvatarImage src={userMetadata.picture} />
             )}
             <AvatarFallback className="bg-white/20 text-white text-2xl">
-              {(userMetadata.display_name || userMetadata.name || '?').slice(0, 2).toUpperCase()}
+              {displayName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
 
           <div className="text-center md:text-left">
             <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              Hey, {userMetadata.display_name || userMetadata.name || 'friend'}!
+              {greeting}
             </h1>
             <p className="text-white/80 text-lg max-w-xl">
-              Let's optimize your relay setup. We'll check your current relays,
-              see what your friends are using, and help you find the best connections.
+              {description}
             </p>
           </div>
         </div>

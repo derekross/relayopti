@@ -8,6 +8,11 @@ import {
   Search,
   Sparkles,
   ExternalLink,
+  Ban,
+  Database,
+  Share2,
+  Radio,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,15 +29,17 @@ import {
 } from '@/components/ui/dialog';
 
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useUserRelays, getInboxRelays, getOutboxRelays, DEFAULT_SEARCH_RELAYS, DEFAULT_DM_RELAYS } from '@/hooks/useUserRelays';
+import { useUserRelays, getInboxRelays, getOutboxRelays, DEFAULT_SEARCH_RELAYS, DEFAULT_DM_RELAYS, DEFAULT_INDEXER_RELAYS, DEFAULT_BROADCAST_RELAYS } from '@/hooks/useUserRelays';
 import { useContactRelays } from '@/hooks/useContactRelays';
 import { useRelayPing } from '@/hooks/useRelayPing';
 import { usePublishRelayLists } from '@/hooks/usePublishRelayLists';
+import { useTopRelays } from '@/hooks/useTopRelays';
 import { isValidRelayUrl, normalizeRelayUrl, isSameRelay } from '@/lib/relay-utils';
 
 import { HeroSection } from './HeroSection';
 import { RelayHealthCard } from './RelayHealthCard';
 import { RelaySuggestionCard } from './RelaySuggestionCard';
+import { TopRelaySuggestionCard } from './TopRelaySuggestionCard';
 import { RelayTypesGuide } from './RelayTypeExplainer';
 import { PublishButton } from './PublishButton';
 
@@ -50,6 +57,11 @@ export function RelayOptimizerPage() {
   const [outboxRelays, setOutboxRelays] = useState<string[]>([]);
   const [dmRelays, setDmRelays] = useState<string[]>([]);
   const [searchRelays, setSearchRelays] = useState<string[]>([]);
+  const [blockedRelays, setBlockedRelays] = useState<string[]>([]);
+  const [indexerRelays, setIndexerRelays] = useState<string[]>([]);
+  const [proxyRelays, setProxyRelays] = useState<string[]>([]);
+  const [broadcastRelays, setBroadcastRelays] = useState<string[]>([]);
+  const [trustedRelays, setTrustedRelays] = useState<string[]>([]);
 
   // Track original state to detect changes
   const [originalState, setOriginalState] = useState<{
@@ -57,11 +69,18 @@ export function RelayOptimizerPage() {
     outbox: string[];
     dm: string[];
     search: string[];
+    blocked: string[];
+    indexer: string[];
+    proxy: string[];
+    broadcast: string[];
+    trusted: string[];
   } | null>(null);
 
   // Track whether we're using defaults
   const [usingDefaultDm, setUsingDefaultDm] = useState(false);
   const [usingDefaultSearch, setUsingDefaultSearch] = useState(false);
+  const [usingDefaultIndexer, setUsingDefaultIndexer] = useState(false);
+  const [usingDefaultBroadcast, setUsingDefaultBroadcast] = useState(false);
 
   // Sync from fetched data
   useEffect(() => {
@@ -72,23 +91,39 @@ export function RelayOptimizerPage() {
       // Use defaults if user has none configured
       const isDmDefault = userRelays.dmRelays.length === 0;
       const isSearchDefault = userRelays.searchRelays.length === 0;
+      const isIndexerDefault = userRelays.indexerRelays.length === 0;
+      const isBroadcastDefault = userRelays.broadcastRelays.length === 0;
 
       const dm = isDmDefault ? DEFAULT_DM_RELAYS : userRelays.dmRelays;
       const search = isSearchDefault ? DEFAULT_SEARCH_RELAYS : userRelays.searchRelays;
+      const indexer = isIndexerDefault ? DEFAULT_INDEXER_RELAYS : userRelays.indexerRelays;
+      const broadcast = isBroadcastDefault ? DEFAULT_BROADCAST_RELAYS : userRelays.broadcastRelays;
 
       setUsingDefaultDm(isDmDefault);
       setUsingDefaultSearch(isSearchDefault);
+      setUsingDefaultIndexer(isIndexerDefault);
+      setUsingDefaultBroadcast(isBroadcastDefault);
 
       setInboxRelays(inbox);
       setOutboxRelays(outbox);
       setDmRelays(dm);
       setSearchRelays(search);
+      setBlockedRelays(userRelays.blockedRelays);
+      setIndexerRelays(indexer);
+      setProxyRelays(userRelays.proxyRelays);
+      setBroadcastRelays(broadcast);
+      setTrustedRelays(userRelays.trustedRelays);
 
       setOriginalState({
         inbox,
         outbox,
         dm,
         search,
+        blocked: userRelays.blockedRelays,
+        indexer,
+        proxy: userRelays.proxyRelays,
+        broadcast,
+        trusted: userRelays.trustedRelays,
       });
     }
   }, [userRelays]);
@@ -107,13 +142,39 @@ export function RelayOptimizerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inboxRelays, outboxRelays, dmRelays, searchRelays]);
 
-  // Compute all user relays for contact analysis
+  // Compute all user relays for contact analysis (excluding blocked)
   const allUserRelays = useMemo(() => {
-    return [...new Set([...inboxRelays, ...outboxRelays, ...dmRelays, ...searchRelays])];
-  }, [inboxRelays, outboxRelays, dmRelays, searchRelays]);
+    return [...new Set([
+      ...inboxRelays,
+      ...outboxRelays,
+      ...dmRelays,
+      ...searchRelays,
+      ...indexerRelays,
+      ...proxyRelays,
+      ...broadcastRelays,
+      ...trustedRelays,
+    ])];
+  }, [inboxRelays, outboxRelays, dmRelays, searchRelays, indexerRelays, proxyRelays, broadcastRelays, trustedRelays]);
 
   // Contact relay suggestions
   const { data: contactData, isLoading: contactsLoading } = useContactRelays(user?.pubkey, allUserRelays);
+
+  // Check if user has no inbox/outbox relays (to show top relay suggestions)
+  const hasNoInboxOutbox = inboxRelays.length === 0 && outboxRelays.length === 0;
+
+  // Fetch top relays from nostr.watch when user has no relays configured
+  const { data: topRelays, isLoading: topRelaysLoading } = useTopRelays(hasNoInboxOutbox && isLoggedIn);
+
+  // Test top relays too
+  useEffect(() => {
+    if (topRelays && topRelays.length > 0) {
+      const newRelays = topRelays.filter(url => !statuses.has(url));
+      if (newRelays.length > 0) {
+        newRelays.forEach(url => testRelay(url));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topRelays]);
 
   // Test suggested relays too
   useEffect(() => {
@@ -150,16 +211,21 @@ export function RelayOptimizerPage() {
       !arraysEqual(inboxRelays, originalState.inbox) ||
       !arraysEqual(outboxRelays, originalState.outbox) ||
       !arraysEqual(dmRelays, originalState.dm) ||
-      !arraysEqual(searchRelays, originalState.search)
+      !arraysEqual(searchRelays, originalState.search) ||
+      !arraysEqual(blockedRelays, originalState.blocked) ||
+      !arraysEqual(indexerRelays, originalState.indexer) ||
+      !arraysEqual(proxyRelays, originalState.proxy) ||
+      !arraysEqual(broadcastRelays, originalState.broadcast) ||
+      !arraysEqual(trustedRelays, originalState.trusted)
     );
-  }, [inboxRelays, outboxRelays, dmRelays, searchRelays, originalState]);
+  }, [inboxRelays, outboxRelays, dmRelays, searchRelays, blockedRelays, indexerRelays, proxyRelays, broadcastRelays, trustedRelays, originalState]);
 
   // Add relay dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [addDialogType, setAddDialogType] = useState<'inbox' | 'outbox' | 'dm' | 'search'>('inbox');
+  const [addDialogType, setAddDialogType] = useState<'inbox' | 'outbox' | 'dm' | 'search' | 'blocked' | 'indexer' | 'proxy' | 'broadcast' | 'trusted'>('inbox');
   const [newRelayUrl, setNewRelayUrl] = useState('');
 
-  const openAddDialog = (type: 'inbox' | 'outbox' | 'dm' | 'search') => {
+  const openAddDialog = (type: typeof addDialogType) => {
     setAddDialogType(type);
     setNewRelayUrl('');
     setAddDialogOpen(true);
@@ -199,10 +265,37 @@ export function RelayOptimizerPage() {
           setSearchRelays([...searchRelays, url]);
         }
         break;
+      case 'blocked':
+        if (!blockedRelays.some(r => isSameRelay(r, normalized))) {
+          setBlockedRelays([...blockedRelays, url]);
+        }
+        break;
+      case 'indexer':
+        if (!indexerRelays.some(r => isSameRelay(r, normalized))) {
+          setIndexerRelays([...indexerRelays, url]);
+        }
+        break;
+      case 'proxy':
+        if (!proxyRelays.some(r => isSameRelay(r, normalized))) {
+          setProxyRelays([...proxyRelays, url]);
+        }
+        break;
+      case 'broadcast':
+        if (!broadcastRelays.some(r => isSameRelay(r, normalized))) {
+          setBroadcastRelays([...broadcastRelays, url]);
+        }
+        break;
+      case 'trusted':
+        if (!trustedRelays.some(r => isSameRelay(r, normalized))) {
+          setTrustedRelays([...trustedRelays, url]);
+        }
+        break;
     }
 
-    // Test the new relay
-    testRelay(url);
+    // Test the new relay (except blocked relays)
+    if (addDialogType !== 'blocked') {
+      testRelay(url);
+    }
     setAddDialogOpen(false);
     setNewRelayUrl('');
   };
@@ -271,6 +364,26 @@ export function RelayOptimizerPage() {
     setSearchRelays(searchRelays.filter(r => !isSameRelay(r, url)));
   }, [searchRelays]);
 
+  const handleRemoveBlocked = useCallback((url: string) => {
+    setBlockedRelays(blockedRelays.filter(r => !isSameRelay(r, url)));
+  }, [blockedRelays]);
+
+  const handleRemoveIndexer = useCallback((url: string) => {
+    setIndexerRelays(indexerRelays.filter(r => !isSameRelay(r, url)));
+  }, [indexerRelays]);
+
+  const handleRemoveProxy = useCallback((url: string) => {
+    setProxyRelays(proxyRelays.filter(r => !isSameRelay(r, url)));
+  }, [proxyRelays]);
+
+  const handleRemoveBroadcast = useCallback((url: string) => {
+    setBroadcastRelays(broadcastRelays.filter(r => !isSameRelay(r, url)));
+  }, [broadcastRelays]);
+
+  const handleRemoveTrusted = useCallback((url: string) => {
+    setTrustedRelays(trustedRelays.filter(r => !isSameRelay(r, url)));
+  }, [trustedRelays]);
+
   // Suggestion handlers
   const handleAddToInbox = useCallback((url: string) => {
     if (!inboxRelays.some(r => isSameRelay(r, url))) {
@@ -297,6 +410,11 @@ export function RelayOptimizerPage() {
       outboxRelays,
       dmRelays,
       searchRelays,
+      blockedRelays,
+      indexerRelays,
+      proxyRelays,
+      broadcastRelays,
+      trustedRelays,
     });
     // Update original state after publish
     setOriginalState({
@@ -304,6 +422,11 @@ export function RelayOptimizerPage() {
       outbox: outboxRelays,
       dm: dmRelays,
       search: searchRelays,
+      blocked: blockedRelays,
+      indexer: indexerRelays,
+      proxy: proxyRelays,
+      broadcast: broadcastRelays,
+      trusted: trustedRelays,
     });
     refetchRelays();
   };
@@ -364,7 +487,7 @@ export function RelayOptimizerPage() {
         <>
             {/* Your Relays Section */}
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <div>
                   <h2 className="text-xl font-bold flex items-center gap-2 text-white">
                     Your Relays
@@ -393,11 +516,11 @@ export function RelayOptimizerPage() {
               </div>
 
               <Tabs defaultValue="inbox-outbox" className="w-full">
-                <TabsList className="w-full justify-start mb-4 bg-white/5 border border-white/10">
+                <TabsList className="w-full justify-start mb-4 bg-white/5 border border-white/10 flex-wrap h-auto gap-1 p-1">
                   <TabsTrigger value="inbox-outbox" className="gap-1.5 data-[state=active]:bg-violet-500 data-[state=active]:text-white text-white/70">
                     <Inbox className="w-4 h-4" />
                     <Send className="w-4 h-4" />
-                    Inbox & Outbox
+                    <span className="hidden sm:inline">Inbox & Outbox</span>
                   </TabsTrigger>
                   <TabsTrigger value="dm" className="gap-1.5 data-[state=active]:bg-pink-500 data-[state=active]:text-white text-white/70">
                     <MessageSquare className="w-4 h-4" />
@@ -406,6 +529,26 @@ export function RelayOptimizerPage() {
                   <TabsTrigger value="search" className="gap-1.5 data-[state=active]:bg-emerald-500 data-[state=active]:text-white text-white/70">
                     <Search className="w-4 h-4" />
                     Search
+                  </TabsTrigger>
+                  <TabsTrigger value="indexer" className="gap-1.5 data-[state=active]:bg-blue-500 data-[state=active]:text-white text-white/70">
+                    <Database className="w-4 h-4" />
+                    Indexer
+                  </TabsTrigger>
+                  <TabsTrigger value="proxy" className="gap-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white text-white/70">
+                    <Share2 className="w-4 h-4" />
+                    Proxy
+                  </TabsTrigger>
+                  <TabsTrigger value="broadcast" className="gap-1.5 data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-white/70">
+                    <Radio className="w-4 h-4" />
+                    Broadcast
+                  </TabsTrigger>
+                  <TabsTrigger value="trusted" className="gap-1.5 data-[state=active]:bg-amber-500 data-[state=active]:text-white text-white/70">
+                    <ShieldCheck className="w-4 h-4" />
+                    Trusted
+                  </TabsTrigger>
+                  <TabsTrigger value="blocked" className="gap-1.5 data-[state=active]:bg-red-500 data-[state=active]:text-white text-white/70">
+                    <Ban className="w-4 h-4" />
+                    Blocked
                   </TabsTrigger>
                 </TabsList>
 
@@ -552,16 +695,324 @@ export function RelayOptimizerPage() {
                     </>
                   )}
                 </TabsContent>
+
+                {/* Blocked Tab */}
+                <TabsContent value="blocked" className="space-y-4">
+                  {relaysLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm">
+                        <p className="text-red-300">
+                          Relays that clients should never connect to. Use this to block spam or malicious relays.
+                        </p>
+                      </div>
+
+                      {blockedRelays.length > 0 ? (
+                        <div className="grid gap-3">
+                          {blockedRelays.map(url => (
+                            <RelayHealthCard
+                              key={url}
+                              relay={statuses.get(url) || {
+                                url,
+                                latency: null,
+                                status: 'unknown',
+                                lastTested: 0,
+                              }}
+                              onRemove={() => handleRemoveBlocked(url)}
+                              type="dm"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-white/50">
+                          No blocked relays configured
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        onClick={() => openAddDialog('blocked')}
+                        className="w-full gap-2 border-dashed border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Block a Relay
+                      </Button>
+                    </>
+                  )}
+                </TabsContent>
+
+                {/* Indexer Tab */}
+                <TabsContent value="indexer" className="space-y-4">
+                  {relaysLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
+                    </div>
+                  ) : (
+                    <>
+                      {usingDefaultIndexer && (
+                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm">
+                          <p className="text-blue-300">
+                            <strong>Using suggested defaults.</strong> You don't have indexer relays published yet.
+                            Publish to save these to your profile.
+                          </p>
+                        </div>
+                      )}
+
+                      {!usingDefaultIndexer && (
+                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm">
+                          <p className="text-blue-300">
+                            Relays for downloading/sending profile (kind 0) and relay list (kind 10002) events.
+                          </p>
+                        </div>
+                      )}
+
+                      {indexerRelays.length > 0 ? (
+                        <div className="grid gap-3">
+                          {indexerRelays.map(url => (
+                            <RelayHealthCard
+                              key={url}
+                              relay={statuses.get(url) || {
+                                url,
+                                latency: null,
+                                status: 'unknown',
+                                lastTested: 0,
+                              }}
+                              onRemove={() => handleRemoveIndexer(url)}
+                              type="dm"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-white/50">
+                          No indexer relays configured
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        onClick={() => openAddDialog('indexer')}
+                        className="w-full gap-2 border-dashed border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Indexer Relay
+                      </Button>
+                    </>
+                  )}
+                </TabsContent>
+
+                {/* Proxy Tab */}
+                <TabsContent value="proxy" className="space-y-4">
+                  {relaysLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-sm">
+                        <p className="text-orange-300">
+                          Proxy/aggregator relays to load content from. These relays aggregate data from multiple sources.
+                        </p>
+                      </div>
+
+                      {proxyRelays.length > 0 ? (
+                        <div className="grid gap-3">
+                          {proxyRelays.map(url => (
+                            <RelayHealthCard
+                              key={url}
+                              relay={statuses.get(url) || {
+                                url,
+                                latency: null,
+                                status: 'unknown',
+                                lastTested: 0,
+                              }}
+                              onRemove={() => handleRemoveProxy(url)}
+                              type="dm"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-white/50">
+                          No proxy relays configured
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        onClick={() => openAddDialog('proxy')}
+                        className="w-full gap-2 border-dashed border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Proxy Relay
+                      </Button>
+                    </>
+                  )}
+                </TabsContent>
+
+                {/* Broadcast Tab */}
+                <TabsContent value="broadcast" className="space-y-4">
+                  {relaysLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
+                    </div>
+                  ) : (
+                    <>
+                      {usingDefaultBroadcast && (
+                        <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-sm">
+                          <p className="text-cyan-300">
+                            <strong>Using suggested defaults.</strong> You don't have broadcast relays published yet.
+                            Publish to save these to your profile.
+                          </p>
+                        </div>
+                      )}
+
+                      {!usingDefaultBroadcast && (
+                        <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-sm">
+                          <p className="text-cyan-300">
+                            Relays to broadcast events to. Use these to ensure wide distribution of your content.
+                          </p>
+                        </div>
+                      )}
+
+                      {broadcastRelays.length > 0 ? (
+                        <div className="grid gap-3">
+                          {broadcastRelays.map(url => (
+                            <RelayHealthCard
+                              key={url}
+                              relay={statuses.get(url) || {
+                                url,
+                                latency: null,
+                                status: 'unknown',
+                                lastTested: 0,
+                              }}
+                              onRemove={() => handleRemoveBroadcast(url)}
+                              type="dm"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-white/50">
+                          No broadcast relays configured
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        onClick={() => openAddDialog('broadcast')}
+                        className="w-full gap-2 border-dashed border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Broadcast Relay
+                      </Button>
+                    </>
+                  )}
+                </TabsContent>
+
+                {/* Trusted Tab */}
+                <TabsContent value="trusted" className="space-y-4">
+                  {relaysLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm">
+                        <p className="text-amber-300">
+                          Trusted relays that are allowed to see your IP address. Only add relays you fully trust.
+                        </p>
+                      </div>
+
+                      {trustedRelays.length > 0 ? (
+                        <div className="grid gap-3">
+                          {trustedRelays.map(url => (
+                            <RelayHealthCard
+                              key={url}
+                              relay={statuses.get(url) || {
+                                url,
+                                latency: null,
+                                status: 'unknown',
+                                lastTested: 0,
+                              }}
+                              onRemove={() => handleRemoveTrusted(url)}
+                              type="dm"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-white/50">
+                          No trusted relays configured
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        onClick={() => openAddDialog('trusted')}
+                        className="w-full gap-2 border-dashed border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Trusted Relay
+                      </Button>
+                    </>
+                  )}
+                </TabsContent>
               </Tabs>
             </div>
 
-            {/* Suggestions Section */}
+            {/* Top Relays Section - shown when user has no inbox/outbox */}
+            {hasNoInboxOutbox && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold flex items-center gap-2 text-white">
+                      <Sparkles className="w-5 h-5 text-emerald-400" />
+                      Get Started with Top Relays
+                    </h2>
+                    <p className="text-sm text-white/60">
+                      Popular online relays from nostr.watch to get you started
+                    </p>
+                  </div>
+                </div>
+
+                {topRelaysLoading ? (
+                  <div className="grid gap-3">
+                    {[1, 2, 3].map(i => (
+                      <Skeleton key={i} className="h-32 w-full rounded-2xl bg-white/5" />
+                    ))}
+                  </div>
+                ) : topRelays && topRelays.length > 0 ? (
+                  <div className="grid gap-3">
+                    {topRelays.map(url => (
+                      <TopRelaySuggestionCard
+                        key={url}
+                        url={url}
+                        relayStatus={statuses.get(url)}
+                        onAddToInbox={() => handleAddToInbox(url)}
+                        onAddToOutbox={() => handleAddToOutbox(url)}
+                        alreadyUsed={inboxRelays.includes(url) || outboxRelays.includes(url)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 px-6 rounded-2xl border border-dashed border-white/20 bg-white/5">
+                    <Sparkles className="w-12 h-12 mx-auto text-emerald-400/50 mb-4" />
+                    <h3 className="font-semibold mb-2 text-white">Unable to load top relays</h3>
+                    <p className="text-sm text-white/60">
+                      Check out nostr.watch for relay suggestions, or add relays manually.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Suggestions Section - from contacts */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-xl font-bold flex items-center gap-2 text-white">
                     <Sparkles className="w-5 h-5 text-amber-400" />
-                    Suggested Relays
+                    {hasNoInboxOutbox ? 'Relays Your Friends Use' : 'Suggested Relays'}
                   </h2>
                   <p className="text-sm text-white/60">
                     {contactData ? (
@@ -586,7 +1037,9 @@ export function RelayOptimizerPage() {
                   <Sparkles className="w-12 h-12 mx-auto text-amber-400/50 mb-4" />
                   <h3 className="font-semibold mb-2 text-white">No new suggestions</h3>
                   <p className="text-sm text-white/60">
-                    You're already using the most popular relays among your contacts!
+                    {hasNoInboxOutbox
+                      ? "We couldn't find relay info from your contacts. Try the top relays above!"
+                      : "You're already using the most popular relays among your contacts!"}
                   </p>
                 </div>
               ) : (

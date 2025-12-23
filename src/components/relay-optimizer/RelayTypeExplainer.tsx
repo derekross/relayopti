@@ -185,24 +185,24 @@ function RelayTypeExplainerDark({ type }: { type: 'inbox' | 'outbox' | 'dm' | 's
   };
 
   return (
-    <div className={cn('flex items-start gap-3 p-4 rounded-xl border', darkColors[type])}>
-      <div className="p-2 rounded-lg bg-white/10">
-        <Icon className="w-5 h-5" />
+    <div className={cn('p-4 rounded-xl border', darkColors[type])}>
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 rounded-lg bg-white/10 shrink-0">
+          <Icon className="w-5 h-5" />
+        </div>
+        <h4 className="font-semibold text-sm text-white">{info.title}</h4>
       </div>
-      <div className="flex-1">
-        <h4 className="font-semibold text-sm mb-1 text-white">{info.title}</h4>
-        <p className="text-sm text-white/60 leading-relaxed">
-          {info.longDesc}
-        </p>
-        <ul className="mt-2 space-y-1">
-          {info.tips.map((tip, i) => (
-            <li key={i} className="text-xs text-white/50 flex items-center gap-1.5">
-              <span className="w-1 h-1 rounded-full bg-current" />
-              {tip}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <p className="text-sm text-white/60 leading-relaxed mb-2">
+        {info.longDesc}
+      </p>
+      <ul className="space-y-1">
+        {info.tips.map((tip, i) => (
+          <li key={i} className="text-xs text-white/50 flex items-start gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-current mt-1.5 shrink-0" />
+            <span>{tip}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

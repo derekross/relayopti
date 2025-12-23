@@ -29,6 +29,16 @@ export interface UserRelayLists {
   dmRelays: string[];
   /** Search relays (kind 10007) */
   searchRelays: string[];
+  /** Blocked relays (kind 10006) - relays clients should never connect to */
+  blockedRelays: string[];
+  /** Indexer relays (kind 10086) - where to download/send kinds 0 and 10002 */
+  indexerRelays: string[];
+  /** Proxy relays (kind 10087) - proxy/aggregator relays to load from */
+  proxyRelays: string[];
+  /** Broadcast relays (kind 10088) - relays to send events to */
+  broadcastRelays: string[];
+  /** Trusted relays (kind 10089) - trusted relays that can see user's IP */
+  trustedRelays: string[];
   /** Timestamp when data was fetched */
   fetchedAt: number;
 }
@@ -56,7 +66,7 @@ export interface RelaySuggestion {
 }
 
 /** Categories of relays the user can manage */
-export type RelayCategory = 'inbox' | 'outbox' | 'dm' | 'search';
+export type RelayCategory = 'inbox' | 'outbox' | 'dm' | 'search' | 'blocked' | 'indexer' | 'proxy' | 'broadcast' | 'trusted';
 
 /** State for the relay optimizer */
 export interface RelayOptimizerState {
@@ -68,6 +78,16 @@ export interface RelayOptimizerState {
   dmRelays: string[];
   /** Search relays */
   searchRelays: string[];
+  /** Blocked relays */
+  blockedRelays: string[];
+  /** Indexer relays */
+  indexerRelays: string[];
+  /** Proxy relays */
+  proxyRelays: string[];
+  /** Broadcast relays */
+  broadcastRelays: string[];
+  /** Trusted relays */
+  trustedRelays: string[];
   /** Health status for all known relays */
   relayStatuses: Map<string, RelayStatus>;
   /** Suggestions from contacts */
@@ -82,6 +102,11 @@ export interface RelayOptimizerState {
     outboxRelays: string[];
     dmRelays: string[];
     searchRelays: string[];
+    blockedRelays: string[];
+    indexerRelays: string[];
+    proxyRelays: string[];
+    broadcastRelays: string[];
+    trustedRelays: string[];
   } | null;
 }
 
@@ -90,6 +115,11 @@ export interface PublishResult {
   nip65: boolean;
   dm: boolean;
   search: boolean;
+  blocked: boolean;
+  indexer: boolean;
+  proxy: boolean;
+  broadcast: boolean;
+  trusted: boolean;
   errors: string[];
 }
 

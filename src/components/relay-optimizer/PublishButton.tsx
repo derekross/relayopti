@@ -97,13 +97,13 @@ export function PublishButton({
 
       {/* Confirmation dialog */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent>
+        <DialogContent className="bg-slate-900 border-white/10">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-white">
               <Upload className="w-5 h-5 text-violet-500" />
               Publish Relay Changes
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/60">
               This will update your relay configuration on Nostr. Other clients
               will use these relays to find your content and send you messages.
             </DialogDescription>
@@ -111,8 +111,8 @@ export function PublishButton({
 
           {changesSummary && (
             <div className="py-4 space-y-2">
-              <p className="text-sm font-medium">Changes to publish:</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <p className="text-sm font-medium text-white">Changes to publish:</p>
+              <div className="grid grid-cols-2 gap-2 text-sm text-white">
                 {changesSummary.inbox > 0 && (
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-violet-500/10">
                     <span className="w-2 h-2 rounded-full bg-violet-500" />
@@ -141,7 +141,7 @@ export function PublishButton({
             </div>
           )}
 
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-300">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <p className="text-sm">
               This will broadcast to your current relays. Make sure you have at
@@ -150,12 +150,12 @@ export function PublishButton({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirm(false)}>
+            <Button variant="outline" onClick={() => setShowConfirm(false)} className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white">
               Cancel
             </Button>
             <Button
               onClick={handlePublish}
-              className="bg-gradient-to-r from-violet-600 to-purple-600"
+              className="bg-gradient-to-r from-violet-600 to-purple-600 text-white"
             >
               <Upload className="w-4 h-4 mr-2" />
               Publish to Nostr
