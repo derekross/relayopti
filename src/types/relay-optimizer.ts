@@ -120,6 +120,10 @@ export interface PublishResult {
   proxy: boolean;
   broadcast: boolean;
   trusted: boolean;
+  /** Whether profile (kind 0) was broadcast to all relays */
+  profile: boolean;
+  /** Whether contact list (kind 3) was broadcast to all relays */
+  contactList: boolean;
   errors: string[];
 }
 

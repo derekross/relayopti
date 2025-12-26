@@ -33,6 +33,7 @@ import { useUserRelays, getInboxRelays, getOutboxRelays, DEFAULT_SEARCH_RELAYS, 
 import { useContactRelays } from '@/hooks/useContactRelays';
 import { useRelayPing } from '@/hooks/useRelayPing';
 import { usePublishRelayLists } from '@/hooks/usePublishRelayLists';
+import { useUserIdentityEvents } from '@/hooks/useUserIdentityEvents';
 import { useTopRelays } from '@/hooks/useTopRelays';
 import { isValidRelayUrl, normalizeRelayUrl, isSameRelay } from '@/lib/relay-utils';
 
@@ -51,6 +52,9 @@ export function RelayOptimizerPage() {
 
   // Fetch user's relay lists
   const { data: userRelays, isLoading: relaysLoading, refetch: refetchRelays } = useUserRelays(user?.pubkey);
+
+  // Fetch user's identity events (profile and contact list) for broadcasting
+  const { data: identityEvents } = useUserIdentityEvents(user?.pubkey);
 
   // Local state for editing
   const [inboxRelays, setInboxRelays] = useState<string[]>([]);
@@ -427,6 +431,9 @@ export function RelayOptimizerPage() {
       proxyRelays,
       broadcastRelays,
       trustedRelays,
+      // Broadcast profile and contact list to all relays so user's identity follows them
+      profileEvent: identityEvents?.profileEvent,
+      contactListEvent: identityEvents?.contactListEvent,
     });
     // Update original state after publish
     setOriginalState({

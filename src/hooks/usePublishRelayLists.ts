@@ -1,5 +1,6 @@
 import { useNostr } from '@nostrify/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { NostrEvent } from '@nostrify/nostrify';
 import { useCurrentUser } from './useCurrentUser';
 import { useToast } from './useToast';
 import type { PublishResult } from '@/types/relay-optimizer';
@@ -29,6 +30,10 @@ interface RelayListsToPublish {
   proxyRelays: string[];
   broadcastRelays: string[];
   trustedRelays: string[];
+  /** User's profile event (kind 0) to broadcast to all relays */
+  profileEvent?: NostrEvent | null;
+  /** User's contact list event (kind 3) to broadcast to all relays */
+  contactListEvent?: NostrEvent | null;
 }
 
 /**
@@ -91,6 +96,8 @@ export function usePublishRelayLists() {
         proxy: false,
         broadcast: false,
         trusted: false,
+        profile: false,
+        contactList: false,
         errors: [],
       };
 
@@ -254,6 +261,46 @@ export function usePublishRelayLists() {
         }
       }
 
+      // Broadcast profile (kind 0) to all relays
+      // This ensures the user's identity follows them to new relays
+      if (lists.profileEvent) {
+        try {
+          // Re-sign the profile event with a new timestamp to broadcast it
+          const event = await user.signer.signEvent({
+            kind: 0,
+            content: lists.profileEvent.content,
+            tags: addClientTag(lists.profileEvent.tags.filter(([name]) => name !== 'client')),
+            created_at: Math.floor(Date.now() / 1000),
+          });
+
+          await nostr.event(event, { signal: AbortSignal.timeout(10000) });
+          results.profile = true;
+        } catch (e) {
+          results.errors.push(`Profile: ${formatRelayError(e)}`);
+          console.error('Failed to broadcast profile:', e);
+        }
+      }
+
+      // Broadcast contact list (kind 3) to all relays
+      // This ensures the user's social graph follows them to new relays
+      if (lists.contactListEvent) {
+        try {
+          // Re-sign the contact list event with a new timestamp to broadcast it
+          const event = await user.signer.signEvent({
+            kind: 3,
+            content: lists.contactListEvent.content,
+            tags: addClientTag(lists.contactListEvent.tags.filter(([name]) => name !== 'client')),
+            created_at: Math.floor(Date.now() / 1000),
+          });
+
+          await nostr.event(event, { signal: AbortSignal.timeout(10000) });
+          results.contactList = true;
+        } catch (e) {
+          results.errors.push(`Contact list: ${formatRelayError(e)}`);
+          console.error('Failed to broadcast contact list:', e);
+        }
+      }
+
       return results;
     },
     onSuccess: (result) => {
@@ -271,10 +318,23 @@ export function usePublishRelayLists() {
       if (result.broadcast) successParts.push('broadcast');
       if (result.trusted) successParts.push('trusted');
 
-      if (successParts.length > 0) {
+      // Track identity broadcasts separately
+      const identityParts: string[] = [];
+      if (result.profile) identityParts.push('profile');
+      if (result.contactList) identityParts.push('contact list');
+
+      if (successParts.length > 0 || identityParts.length > 0) {
+        let description = '';
+        if (successParts.length > 0) {
+          description = `Updated your ${successParts.join(', ')} relays.`;
+        }
+        if (identityParts.length > 0) {
+          description += description ? ' ' : '';
+          description += `Broadcast your ${identityParts.join(' and ')} to all relays.`;
+        }
         toast({
-          title: 'Relay lists published!',
-          description: `Updated your ${successParts.join(', ')} relays.`,
+          title: 'Published successfully!',
+          description,
         });
       }
 
