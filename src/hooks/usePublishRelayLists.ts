@@ -330,7 +330,7 @@ export function usePublishRelayLists() {
         }
         if (identityParts.length > 0) {
           description += description ? ' ' : '';
-          description += `Broadcast your ${identityParts.join(' and ')} to all relays.`;
+          description += `Your ${identityParts.join(' and ')} ${identityParts.length > 1 ? 'were' : 'was'} synced to all relays.`;
         }
         toast({
           title: 'Published successfully!',
