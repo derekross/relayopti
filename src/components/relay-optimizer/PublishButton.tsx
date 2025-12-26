@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, Check, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, Check, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +21,8 @@ interface PublishButtonProps {
     dm: number;
     search: number;
   };
+  /** Validation errors that prevent publishing */
+  validationErrors?: string[];
   className?: string;
 }
 
@@ -29,10 +31,14 @@ export function PublishButton({
   isPublishing,
   onPublish,
   changesSummary,
+  validationErrors = [],
   className,
 }: PublishButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
+
+  const hasValidationErrors = validationErrors.length > 0;
+  const canPublish = hasChanges && !hasValidationErrors;
 
   const handlePublish = async () => {
     setShowConfirm(false);
@@ -45,7 +51,8 @@ export function PublishButton({
     }
   };
 
-  if (!hasChanges && !publishSuccess) {
+  // Show button if there are changes OR validation errors (so user can see what's wrong)
+  if (!hasChanges && !publishSuccess && !hasValidationErrors) {
     return null;
   }
 
@@ -68,6 +75,8 @@ export function PublishButton({
             'hover:scale-105 hover:shadow-2xl',
             publishSuccess
               ? 'bg-green-500 hover:bg-green-500'
+              : hasValidationErrors
+              ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500'
               : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500'
           )}
         >
@@ -81,6 +90,11 @@ export function PublishButton({
               <Check className="w-5 h-5" />
               Published!
             </>
+          ) : hasValidationErrors ? (
+            <>
+              <AlertTriangle className="w-5 h-5" />
+              Fix Issues to Publish
+            </>
           ) : (
             <>
               <Upload className="w-5 h-5" />
@@ -89,8 +103,8 @@ export function PublishButton({
           )}
         </Button>
 
-        {/* Pulse animation when there are changes */}
-        {hasChanges && !isPublishing && !publishSuccess && (
+        {/* Pulse animation when there are changes and no errors */}
+        {canPublish && !isPublishing && !publishSuccess && (
           <div className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-20 pointer-events-none" />
         )}
       </div>
@@ -141,13 +155,30 @@ export function PublishButton({
             </div>
           )}
 
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-300">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <p className="text-sm">
-              This will broadcast to your current relays. Make sure you have at
-              least one working relay before publishing.
-            </p>
-          </div>
+          {/* Validation errors */}
+          {hasValidationErrors && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 text-red-300 border border-red-500/20">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div className="text-sm space-y-1">
+                <p className="font-medium">Cannot publish yet:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {validationErrors.map((error, i) => (
+                    <li key={i}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {!hasValidationErrors && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-300">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <p className="text-sm">
+                This will broadcast to your current relays. Make sure you have at
+                least one working relay before publishing.
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirm(false)} className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white">
@@ -155,7 +186,13 @@ export function PublishButton({
             </Button>
             <Button
               onClick={handlePublish}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 text-white"
+              disabled={hasValidationErrors}
+              className={cn(
+                'text-white',
+                hasValidationErrors
+                  ? 'bg-gray-600 hover:bg-gray-600 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-violet-600 to-purple-600'
+              )}
             >
               <Upload className="w-4 h-4 mr-2" />
               Publish to Nostr

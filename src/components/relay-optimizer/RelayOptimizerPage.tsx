@@ -220,6 +220,18 @@ export function RelayOptimizerPage() {
     );
   }, [inboxRelays, outboxRelays, dmRelays, searchRelays, blockedRelays, indexerRelays, proxyRelays, broadcastRelays, trustedRelays, originalState]);
 
+  // Validation errors - require at least 1 inbox and 1 outbox relay
+  const validationErrors = useMemo(() => {
+    const errors: string[] = [];
+    if (inboxRelays.length === 0) {
+      errors.push('Add at least one inbox relay to receive content');
+    }
+    if (outboxRelays.length === 0) {
+      errors.push('Add at least one outbox relay to publish content');
+    }
+    return errors;
+  }, [inboxRelays, outboxRelays]);
+
   // Add relay dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addDialogType, setAddDialogType] = useState<'inbox' | 'outbox' | 'dm' | 'search' | 'blocked' | 'indexer' | 'proxy' | 'broadcast' | 'trusted'>('inbox');
@@ -1128,6 +1140,7 @@ export function RelayOptimizerPage() {
             dm: dmRelays.length,
             search: searchRelays.length,
           }}
+          validationErrors={validationErrors}
         />
       </div>
     </div>

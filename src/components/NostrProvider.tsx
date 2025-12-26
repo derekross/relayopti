@@ -4,6 +4,12 @@ import { NostrContext } from '@nostrify/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppContext } from '@/hooks/useAppContext';
 
+const FALLBACK_WRITE_RELAYS = [
+  'wss://relay.damus.io',
+  'wss://nos.lol',
+  'wss://relay.ditto.pub',
+];
+
 interface NostrProviderProps {
   children: React.ReactNode;
 }
@@ -52,9 +58,11 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           .filter(r => r.write)
           .map(r => r.url);
 
-        const allRelays = new Set<string>(writeRelays);
+        // Use fallback relays if user has no write relays configured
+        // This prevents "no promise in promise.any was resolved" errors
+        const relaysToUse = writeRelays.length > 0 ? writeRelays : FALLBACK_WRITE_RELAYS;
 
-        return [...allRelays];
+        return [...new Set(relaysToUse)];
       },
     });
   }

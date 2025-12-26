@@ -5,6 +5,20 @@ import { useToast } from './useToast';
 import type { PublishResult } from '@/types/relay-optimizer';
 import { normalizeRelayUrl } from '@/lib/relay-utils';
 
+/**
+ * Transform cryptic relay errors into user-friendly messages
+ */
+function formatRelayError(error: unknown): string {
+  const msg = error instanceof Error ? error.message : 'Unknown error';
+
+  // Handle the Promise.any failure when all relays reject
+  if (msg.includes('no promise in promise.any was resolved') || msg.includes('All promises were rejected')) {
+    return 'All relays failed to accept the event. Please check your relay configuration.';
+  }
+
+  return msg;
+}
+
 interface RelayListsToPublish {
   inboxRelays: string[];
   outboxRelays: string[];
@@ -102,8 +116,7 @@ export function usePublishRelayLists() {
           await nostr.event(event, { signal: AbortSignal.timeout(10000) });
           results.nip65 = true;
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results.errors.push(`NIP-65: ${msg}`);
+          results.errors.push(`NIP-65: ${formatRelayError(e)}`);
           console.error('Failed to publish NIP-65:', e);
         }
       }
@@ -122,8 +135,7 @@ export function usePublishRelayLists() {
           await nostr.event(event, { signal: AbortSignal.timeout(10000) });
           results.dm = true;
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results.errors.push(`DM relays: ${msg}`);
+          results.errors.push(`DM relays: ${formatRelayError(e)}`);
           console.error('Failed to publish DM relays:', e);
         }
       }
@@ -142,8 +154,7 @@ export function usePublishRelayLists() {
           await nostr.event(event, { signal: AbortSignal.timeout(10000) });
           results.search = true;
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results.errors.push(`Search relays: ${msg}`);
+          results.errors.push(`Search relays: ${formatRelayError(e)}`);
           console.error('Failed to publish search relays:', e);
         }
       }
@@ -162,8 +173,7 @@ export function usePublishRelayLists() {
           await nostr.event(event, { signal: AbortSignal.timeout(10000) });
           results.blocked = true;
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results.errors.push(`Blocked relays: ${msg}`);
+          results.errors.push(`Blocked relays: ${formatRelayError(e)}`);
           console.error('Failed to publish blocked relays:', e);
         }
       }
@@ -182,8 +192,7 @@ export function usePublishRelayLists() {
           await nostr.event(event, { signal: AbortSignal.timeout(10000) });
           results.indexer = true;
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results.errors.push(`Indexer relays: ${msg}`);
+          results.errors.push(`Indexer relays: ${formatRelayError(e)}`);
           console.error('Failed to publish indexer relays:', e);
         }
       }
@@ -202,8 +211,7 @@ export function usePublishRelayLists() {
           await nostr.event(event, { signal: AbortSignal.timeout(10000) });
           results.proxy = true;
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results.errors.push(`Proxy relays: ${msg}`);
+          results.errors.push(`Proxy relays: ${formatRelayError(e)}`);
           console.error('Failed to publish proxy relays:', e);
         }
       }
@@ -222,8 +230,7 @@ export function usePublishRelayLists() {
           await nostr.event(event, { signal: AbortSignal.timeout(10000) });
           results.broadcast = true;
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results.errors.push(`Broadcast relays: ${msg}`);
+          results.errors.push(`Broadcast relays: ${formatRelayError(e)}`);
           console.error('Failed to publish broadcast relays:', e);
         }
       }
@@ -242,8 +249,7 @@ export function usePublishRelayLists() {
           await nostr.event(event, { signal: AbortSignal.timeout(10000) });
           results.trusted = true;
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results.errors.push(`Trusted relays: ${msg}`);
+          results.errors.push(`Trusted relays: ${formatRelayError(e)}`);
           console.error('Failed to publish trusted relays:', e);
         }
       }
