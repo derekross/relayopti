@@ -1,15 +1,17 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import React, { useRef, useState, useEffect } from 'react';
-import { Shield, Upload, AlertTriangle, UserPlus, KeyRound, Sparkles, Cloud } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { Shield, Upload, AlertTriangle, UserPlus, KeyRound, Sparkles, Link, Loader2, Copy, Check, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useLoginActions } from '@/hooks/useLoginActions';
+import { useLoginActions, generateNostrConnectParams, generateNostrConnectURI, NostrConnectParams } from '@/hooks/useLoginActions';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
+import QRCode from 'qrcode';
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -36,9 +38,20 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
     bunker?: string;
     file?: string;
     extension?: string;
+    connect?: string;
   }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
+  const isMobile = useIsMobile();
+
+  // NostrConnect state
+  const [nostrConnectParams, setNostrConnectParams] = useState<NostrConnectParams | null>(null);
+  const [nostrConnectUri, setNostrConnectUri] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [isWaitingForConnect, setIsWaitingForConnect] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showBunkerInput, setShowBunkerInput] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Reset all state when dialog opens/closes
   useEffect(() => {
@@ -49,9 +62,20 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
       setNsec('');
       setBunkerUri('');
       setErrors({});
+      setNostrConnectParams(null);
+      setNostrConnectUri('');
+      setQrCodeUrl('');
+      setIsWaitingForConnect(false);
+      setCopied(false);
+      setShowBunkerInput(false);
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+      // Abort any pending connect attempt
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
       }
     }
   }, [isOpen]);
@@ -141,6 +165,91 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
     }
   };
 
+  // Generate nostrconnect session
+  const generateConnectSession = useCallback(async () => {
+    const relayUrl = login.getRelayUrl();
+    const params = generateNostrConnectParams(relayUrl);
+    const uri = generateNostrConnectURI(params, 'RelayOpti');
+
+    setNostrConnectParams(params);
+    setNostrConnectUri(uri);
+    setErrors(prev => ({ ...prev, connect: undefined }));
+
+    // Generate QR code
+    try {
+      const qrUrl = await QRCode.toDataURL(uri, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
+      setQrCodeUrl(qrUrl);
+    } catch (err) {
+      console.error('Failed to generate QR code:', err);
+    }
+  }, [login]);
+
+  // Listen for nostrconnect response
+  useEffect(() => {
+    if (!nostrConnectParams || !isWaitingForConnect) return;
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    const connect = async () => {
+      try {
+        await login.nostrconnect(nostrConnectParams, abortController.signal);
+        onLogin();
+        onClose();
+      } catch (err) {
+        if (!abortController.signal.aborted) {
+          console.error('Nostrconnect failed:', err);
+          setErrors(prev => ({
+            ...prev,
+            connect: 'Connection failed or timed out. Please try again.'
+          }));
+          setIsWaitingForConnect(false);
+        }
+      }
+    };
+
+    connect();
+
+    return () => {
+      abortController.abort();
+    };
+  }, [nostrConnectParams, isWaitingForConnect, login, onLogin, onClose]);
+
+  const handleStartConnect = async () => {
+    await generateConnectSession();
+    setIsWaitingForConnect(true);
+  };
+
+  const handleRetryConnect = async () => {
+    setIsWaitingForConnect(false);
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    await generateConnectSession();
+    setIsWaitingForConnect(true);
+  };
+
+  const handleCopyUri = async () => {
+    if (nostrConnectUri) {
+      await navigator.clipboard.writeText(nostrConnectUri);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleOpenSignerApp = () => {
+    if (nostrConnectUri) {
+      window.location.href = nostrConnectUri;
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -177,7 +286,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
     }
   };
 
-  const defaultTab = 'nostr' in window ? 'extension' : 'key';
+  const defaultTab = 'nostr' in window ? 'extension' : 'connect';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -226,7 +335,15 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
           </div>
 
           {/* Login Methods */}
-          <Tabs defaultValue={defaultTab} className="w-full">
+          <Tabs
+            defaultValue={defaultTab}
+            className="w-full"
+            onValueChange={(value) => {
+              if (value === 'connect' && !nostrConnectParams) {
+                handleStartConnect();
+              }
+            }}
+          >
             <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10 rounded-lg mb-4">
               <TabsTrigger value="extension" className="flex items-center gap-2 text-white/70 data-[state=active]:bg-violet-500 data-[state=active]:text-white">
                 <Shield className="w-4 h-4" />
@@ -236,9 +353,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                 <KeyRound className="w-4 h-4" />
                 <span>Key</span>
               </TabsTrigger>
-              <TabsTrigger value="bunker" className="flex items-center gap-2 text-white/70 data-[state=active]:bg-violet-500 data-[state=active]:text-white">
-                <Cloud className="w-4 h-4" />
-                <span>Bunker</span>
+              <TabsTrigger value="connect" className="flex items-center gap-2 text-white/70 data-[state=active]:bg-violet-500 data-[state=active]:text-white">
+                <Link className="w-4 h-4" />
+                <span>Connect</span>
               </TabsTrigger>
             </TabsList>
             <TabsContent value='extension' className='space-y-3'>
@@ -333,37 +450,134 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
               </div>
             </TabsContent>
 
-            <TabsContent value='bunker' className='space-y-3'>
-              <div className='space-y-2'>
-                <label htmlFor='bunkerUri' className='text-sm font-medium text-white/80'>
-                  Bunker URI
-                </label>
-                <Input
-                  id='bunkerUri'
-                  value={bunkerUri}
-                  onChange={(e) => {
-                    setBunkerUri(e.target.value);
-                    if (errors.bunker) setErrors(prev => ({ ...prev, bunker: undefined }));
-                  }}
-                  className={`rounded-lg bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-violet-500 ${
-                    errors.bunker ? 'border-red-500' : ''
-                  }`}
-                  placeholder='bunker://'
-                  autoComplete="off"
-                />
-                {errors.bunker && (
-                  <p className="text-sm text-red-400">{errors.bunker}</p>
-                )}
-              </div>
+            <TabsContent value='connect' className='space-y-3'>
+              {errors.connect && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{errors.connect}</AlertDescription>
+                </Alert>
+              )}
 
-              <div className="flex justify-center">
-                <Button
-                  className='w-full rounded-full py-4 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
-                  onClick={handleBunkerLogin}
-                  disabled={isLoading || !bunkerUri.trim()}
-                >
-                  {isLoading ? 'Connecting...' : 'Login with Bunker'}
-                </Button>
+              <div className='text-center p-4 rounded-lg bg-white/5 border border-white/10'>
+                {!nostrConnectParams ? (
+                  <div className="flex flex-col items-center gap-4">
+                    <Link className='w-12 h-12 text-violet-400' />
+                    <p className='text-sm text-white/60'>
+                      Connect with a remote signer app like Amber or nsec.app
+                    </p>
+                    <Button
+                      className='w-full rounded-full py-4 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
+                      onClick={handleStartConnect}
+                    >
+                      Generate Connection
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-4">
+                    {/* QR Code - Desktop only */}
+                    {!isMobile && qrCodeUrl && (
+                      <div className="bg-white p-2 rounded-lg">
+                        <img
+                          src={qrCodeUrl}
+                          alt="NostrConnect QR Code"
+                          className="w-48 h-48"
+                        />
+                      </div>
+                    )}
+
+                    {/* Status */}
+                    {isWaitingForConnect && (
+                      <div className="flex items-center gap-2 text-sm text-white/50">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Waiting for signer...</span>
+                      </div>
+                    )}
+
+                    {/* Open Signer App - Mobile */}
+                    {isMobile && (
+                      <Button
+                        className='w-full rounded-full py-4 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
+                        onClick={handleOpenSignerApp}
+                        disabled={!nostrConnectUri}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Open Signer App
+                      </Button>
+                    )}
+
+                    {/* Copy URI button */}
+                    <Button
+                      variant="outline"
+                      className='w-full border-white/20 text-white/70 hover:bg-white/10 hover:text-white'
+                      onClick={handleCopyUri}
+                      disabled={!nostrConnectUri}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Connection String
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Retry button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-white/50 hover:text-white hover:bg-white/10"
+                      onClick={handleRetryConnect}
+                    >
+                      Generate New Code
+                    </Button>
+                  </div>
+                )}
+
+                {/* Collapsible Manual Bunker Input */}
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setShowBunkerInput(!showBunkerInput)}
+                    className="flex items-center justify-center gap-2 w-full text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    {showBunkerInput ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                    Manual bunker connection
+                  </button>
+
+                  {showBunkerInput && (
+                    <div className="mt-3 space-y-3">
+                      <Input
+                        id='bunkerUri'
+                        value={bunkerUri}
+                        onChange={(e) => {
+                          setBunkerUri(e.target.value);
+                          if (errors.bunker) setErrors(prev => ({ ...prev, bunker: undefined }));
+                        }}
+                        className={`rounded-lg bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-violet-500 ${errors.bunker ? 'border-red-500' : ''}`}
+                        placeholder='bunker:// or nostrconnect://'
+                        autoComplete="off"
+                      />
+                      {errors.bunker && (
+                        <p className="text-sm text-red-400">{errors.bunker}</p>
+                      )}
+                      <Button
+                        className='w-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
+                        onClick={handleBunkerLogin}
+                        disabled={isLoading || !bunkerUri.trim()}
+                      >
+                        {isLoading ? 'Connecting...' : 'Connect'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>
