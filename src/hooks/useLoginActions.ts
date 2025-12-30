@@ -33,6 +33,11 @@ export function generateNostrConnectURI(params: NostrConnectParams, appName: str
   url.searchParams.set('secret', secret);
   url.searchParams.set('name', appName);
 
+  // Add callback URL based on current origin (works on any domain)
+  if (typeof window !== 'undefined') {
+    url.searchParams.set('callback', window.location.origin);
+  }
+
   return url.toString();
 }
 
