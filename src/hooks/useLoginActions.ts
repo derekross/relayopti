@@ -6,6 +6,12 @@ import { useAppContext } from '@/hooks/useAppContext';
 
 // NOTE: This file should not be edited except for adding new login methods.
 
+/** Check if running on actual mobile device (not just small screen) */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 const DEFAULT_RELAY = 'wss://relay.damus.io';
 
 export interface NostrConnectParams {
@@ -33,8 +39,9 @@ export function generateNostrConnectURI(params: NostrConnectParams, appName: str
   url.searchParams.set('secret', secret);
   url.searchParams.set('name', appName);
 
-  // Add callback URL to redirect after signer authorization
-  if (typeof window !== 'undefined') {
+  // Add callback URL only on mobile devices (not desktop QR code scanning)
+  // When scanning QR from desktop, the signer app is on the phone but the session is on desktop
+  if (typeof window !== 'undefined' && isMobileDevice()) {
     url.searchParams.set('callback', `${window.location.origin}/remoteloginsuccess`);
   }
 
