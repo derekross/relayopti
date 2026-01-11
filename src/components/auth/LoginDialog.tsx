@@ -2,6 +2,7 @@
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Shield, Upload, AlertTriangle, UserPlus, KeyRound, Sparkles, Link, Loader2, Copy, Check, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLoginActions, generateNostrConnectParams, generateNostrConnectURI, NostrConnectParams } from '@/hooks/useLoginActions';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
-import QRCode from 'qrcode';
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -47,8 +47,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
   // NostrConnect state
   const [nostrConnectParams, setNostrConnectParams] = useState<NostrConnectParams | null>(null);
   const [nostrConnectUri, setNostrConnectUri] = useState<string>('');
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isWaitingForConnect, setIsWaitingForConnect] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showBunkerInput, setShowBunkerInput] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -56,40 +56,23 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
   // Check if extension is available
   const hasExtension = 'nostr' in window;
 
-  // Generate nostrconnect session
-  const generateConnectSession = useCallback(async () => {
+  // Generate nostrconnect params (sync) - just creates the QR code data
+  const generateConnectSession = useCallback(() => {
     const relayUrl = login.getRelayUrl();
     const params = generateNostrConnectParams(relayUrl);
     const uri = generateNostrConnectURI(params, 'RelayOpti');
-
     setNostrConnectParams(params);
     setNostrConnectUri(uri);
-    setErrors(prev => ({ ...prev, connect: undefined }));
-
-    // Generate QR code
-    try {
-      const qrUrl = await QRCode.toDataURL(uri, {
-        width: 256,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-      });
-      setQrCodeUrl(qrUrl);
-    } catch (err) {
-      console.error('Failed to generate QR code:', err);
-    }
+    setConnectError(null);
   }, [login]);
 
-  // Clean up on close, or generate session when opening
+  // Reset state when dialog closes
   useEffect(() => {
     if (!isOpen) {
-      // Reset state when dialog closes
       setNostrConnectParams(null);
       setNostrConnectUri('');
-      setQrCodeUrl('');
       setIsWaitingForConnect(false);
+      setConnectError(null);
       setNsec('');
       setBunkerUri('');
       setErrors({});
@@ -97,17 +80,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
       setCopied(false);
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
-        abortControllerRef.current = null;
       }
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } else if (!hasExtension && !nostrConnectParams && !errors.connect) {
-      // On web without extension, 'connect' is the default tab
-      // Generate the session when dialog opens
-      generateConnectSession();
     }
-  }, [isOpen, hasExtension, nostrConnectParams, errors.connect, generateConnectSession]);
+  }, [isOpen]);
 
   const handleExtensionLogin = async () => {
     setIsLoading(true);
@@ -207,14 +185,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
         onLogin();
         onClose();
       } catch (err) {
-        if (!abortControllerRef.current?.signal.aborted) {
-          console.error('Nostrconnect failed:', err);
-          setErrors(prev => ({
-            ...prev,
-            connect: 'Connection failed or timed out. Please try again.'
-          }));
-          setIsWaitingForConnect(false);
-        }
+        console.error('Nostrconnect failed:', err);
+        setConnectError(err instanceof Error ? err.message : 'Connection failed');
+        setIsWaitingForConnect(false);
       }
     };
 
@@ -225,16 +198,14 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
     generateConnectSession();
   };
 
-  const handleRetryConnect = () => {
-    setIsWaitingForConnect(false);
+  const handleRetryConnect = useCallback(() => {
     setNostrConnectParams(null);
     setNostrConnectUri('');
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    setIsWaitingForConnect(false);
+    setConnectError(null);
     // Generate new session after state clears
     setTimeout(() => generateConnectSession(), 0);
-  };
+  }, [generateConnectSession]);
 
   const handleCopyUri = async () => {
     if (nostrConnectUri) {
@@ -339,7 +310,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
             defaultValue={defaultTab}
             className="w-full"
             onValueChange={(value) => {
-              if (value === 'connect' && !nostrConnectParams && !errors.connect) {
+              if (value === 'connect' && !nostrConnectParams && !connectError) {
                 handleStartConnect();
               }
             }}
@@ -451,38 +422,39 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
             </TabsContent>
 
             <TabsContent value='connect' className='space-y-3'>
-              {errors.connect && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{errors.connect}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className='text-center p-4 rounded-lg bg-white/5 border border-white/10'>
-                {!nostrConnectUri ? (
-                  <div className='flex items-center justify-center h-[100px]'>
-                    <Loader2 className='w-8 h-8 animate-spin text-white/50' />
+              <div className='flex flex-col items-center space-y-4'>
+                {connectError ? (
+                  <div className='flex flex-col items-center space-y-4 py-4'>
+                    <p className='text-sm text-red-500 text-center'>{connectError}</p>
+                    <Button variant='outline' onClick={handleRetryConnect} className='border-white/20 text-white/70 hover:bg-white/10'>
+                      Try Again
+                    </Button>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-4">
+                ) : nostrConnectUri ? (
+                  <>
                     {/* QR Code - Desktop only */}
-                    {!isMobile && qrCodeUrl && (
-                      <div className="bg-white p-2 rounded-lg">
-                        <img
-                          src={qrCodeUrl}
-                          alt="NostrConnect QR Code"
-                          className="w-48 h-48"
+                    {!isMobile && (
+                      <div className='p-4 bg-white rounded-xl'>
+                        <QRCodeSVG
+                          value={nostrConnectUri}
+                          size={180}
+                          level='M'
+                          includeMargin={false}
                         />
                       </div>
                     )}
 
-                    {/* Status */}
-                    {isWaitingForConnect && (
-                      <div className="flex items-center gap-2 text-sm text-white/50">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Waiting for signer...</span>
-                      </div>
-                    )}
+                    {/* Status message */}
+                    <div className='flex items-center gap-2 text-sm text-white/50'>
+                      {isWaitingForConnect ? (
+                        <>
+                          <Loader2 className='w-4 h-4 animate-spin' />
+                          <span>Waiting for connection...</span>
+                        </>
+                      ) : (
+                        <span>{isMobile ? 'Open your signer app to connect' : 'Scan with your signer app'}</span>
+                      )}
+                    </div>
 
                     {/* Open Signer App - Mobile */}
                     {isMobile && (
@@ -525,10 +497,15 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                     >
                       Generate New Code
                     </Button>
+                  </>
+                ) : (
+                  <div className='flex items-center justify-center h-[100px]'>
+                    <Loader2 className='w-8 h-8 animate-spin text-white/50' />
                   </div>
                 )}
+              </div>
 
-                {/* Collapsible Manual Bunker Input */}
+              {/* Collapsible Manual Bunker Input */}
                 <div className="mt-4 pt-4 border-t border-white/10">
                   <button
                     type="button"
@@ -569,7 +546,6 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                     </div>
                   )}
                 </div>
-              </div>
             </TabsContent>
           </Tabs>
         </div>
