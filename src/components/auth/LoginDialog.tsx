@@ -53,32 +53,61 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
   const [showBunkerInput, setShowBunkerInput] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Reset all state when dialog opens/closes
+  // Check if extension is available
+  const hasExtension = 'nostr' in window;
+
+  // Generate nostrconnect session
+  const generateConnectSession = useCallback(async () => {
+    const relayUrl = login.getRelayUrl();
+    const params = generateNostrConnectParams(relayUrl);
+    const uri = generateNostrConnectURI(params, 'RelayOpti');
+
+    setNostrConnectParams(params);
+    setNostrConnectUri(uri);
+    setErrors(prev => ({ ...prev, connect: undefined }));
+
+    // Generate QR code
+    try {
+      const qrUrl = await QRCode.toDataURL(uri, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
+      setQrCodeUrl(qrUrl);
+    } catch (err) {
+      console.error('Failed to generate QR code:', err);
+    }
+  }, [login]);
+
+  // Clean up on close, or generate session when opening
   useEffect(() => {
-    if (isOpen) {
-      // Reset state when dialog opens
-      setIsLoading(false);
-      setIsFileLoading(false);
-      setNsec('');
-      setBunkerUri('');
-      setErrors({});
+    if (!isOpen) {
+      // Reset state when dialog closes
       setNostrConnectParams(null);
       setNostrConnectUri('');
       setQrCodeUrl('');
       setIsWaitingForConnect(false);
-      setCopied(false);
+      setNsec('');
+      setBunkerUri('');
+      setErrors({});
       setShowBunkerInput(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      // Abort any pending connect attempt
+      setCopied(false);
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } else if (!hasExtension && !nostrConnectParams && !errors.connect) {
+      // On web without extension, 'connect' is the default tab
+      // Generate the session when dialog opens
+      generateConnectSession();
     }
-  }, [isOpen]);
+  }, [isOpen, hasExtension, nostrConnectParams, errors.connect, generateConnectSession]);
 
   const handleExtensionLogin = async () => {
     setIsLoading(true);
@@ -165,46 +194,20 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
     }
   };
 
-  // Generate nostrconnect session
-  const generateConnectSession = useCallback(async () => {
-    const relayUrl = login.getRelayUrl();
-    const params = generateNostrConnectParams(relayUrl);
-    const uri = generateNostrConnectURI(params, 'RelayOpti');
-
-    setNostrConnectParams(params);
-    setNostrConnectUri(uri);
-    setErrors(prev => ({ ...prev, connect: undefined }));
-
-    // Generate QR code
-    try {
-      const qrUrl = await QRCode.toDataURL(uri, {
-        width: 256,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-      });
-      setQrCodeUrl(qrUrl);
-    } catch (err) {
-      console.error('Failed to generate QR code:', err);
-    }
-  }, [login]);
-
-  // Listen for nostrconnect response
+  // Listen for nostrconnect response - auto-starts when params are set
   useEffect(() => {
-    if (!nostrConnectParams || !isWaitingForConnect) return;
+    if (!nostrConnectParams || isWaitingForConnect) return;
 
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
+    const startListening = async () => {
+      setIsWaitingForConnect(true);
+      abortControllerRef.current = new AbortController();
 
-    const connect = async () => {
       try {
-        await login.nostrconnect(nostrConnectParams, abortController.signal);
+        await login.nostrconnect(nostrConnectParams, abortControllerRef.current.signal);
         onLogin();
         onClose();
       } catch (err) {
-        if (!abortController.signal.aborted) {
+        if (!abortControllerRef.current?.signal.aborted) {
           console.error('Nostrconnect failed:', err);
           setErrors(prev => ({
             ...prev,
@@ -215,25 +218,22 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
       }
     };
 
-    connect();
-
-    return () => {
-      abortController.abort();
-    };
+    startListening();
   }, [nostrConnectParams, isWaitingForConnect, login, onLogin, onClose]);
 
-  const handleStartConnect = async () => {
-    await generateConnectSession();
-    setIsWaitingForConnect(true);
+  const handleStartConnect = () => {
+    generateConnectSession();
   };
 
-  const handleRetryConnect = async () => {
+  const handleRetryConnect = () => {
     setIsWaitingForConnect(false);
+    setNostrConnectParams(null);
+    setNostrConnectUri('');
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    await generateConnectSession();
-    setIsWaitingForConnect(true);
+    // Generate new session after state clears
+    setTimeout(() => generateConnectSession(), 0);
   };
 
   const handleCopyUri = async () => {
@@ -286,7 +286,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
     }
   };
 
-  const defaultTab = 'nostr' in window ? 'extension' : 'connect';
+  const defaultTab = hasExtension ? 'extension' : 'connect';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -339,7 +339,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
             defaultValue={defaultTab}
             className="w-full"
             onValueChange={(value) => {
-              if (value === 'connect' && !nostrConnectParams) {
+              if (value === 'connect' && !nostrConnectParams && !errors.connect) {
                 handleStartConnect();
               }
             }}
@@ -459,18 +459,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
               )}
 
               <div className='text-center p-4 rounded-lg bg-white/5 border border-white/10'>
-                {!nostrConnectParams ? (
-                  <div className="flex flex-col items-center gap-4">
-                    <Link className='w-12 h-12 text-violet-400' />
-                    <p className='text-sm text-white/60'>
-                      Connect with a remote signer app like Amber or nsec.app
-                    </p>
-                    <Button
-                      className='w-full rounded-full py-4 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
-                      onClick={handleStartConnect}
-                    >
-                      Generate Connection
-                    </Button>
+                {!nostrConnectUri ? (
+                  <div className='flex items-center justify-center h-[100px]'>
+                    <Loader2 className='w-8 h-8 animate-spin text-white/50' />
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-4">
