@@ -66,7 +66,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
     setConnectError(null);
   }, [login]);
 
-  // Reset state when dialog closes
+  // Reset state when dialog closes, generate session when opening on mobile
   useEffect(() => {
     if (!isOpen) {
       setNostrConnectParams(null);
@@ -84,8 +84,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    } else if (!hasExtension && !nostrConnectParams && !connectError) {
+      // On mobile/web without extension, 'connect' is the default tab
+      // Generate the session when dialog opens
+      generateConnectSession();
     }
-  }, [isOpen]);
+  }, [isOpen, hasExtension, nostrConnectParams, connectError, generateConnectSession]);
 
   const handleExtensionLogin = async () => {
     setIsLoading(true);
